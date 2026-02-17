@@ -1,0 +1,195 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@plugin '@tailwindcss/typography';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* Vietnamese-optimized fonts */
+  --font-sans:
+    var(--font-be-vietnam-pro), 'Be Vietnam Pro', Inter, system-ui, sans-serif;
+  --font-mono:
+    var(--font-jetbrains-mono), 'JetBrains Mono', 'Courier New', monospace;
+
+  /* Map strict design system colors */
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Constants */
+  --radius: var(--radius);
+
+  /* Chart Colors (Keep existing as they aren't strictly defined but needed) */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Sidebar Colors (Map to strict system if possible or keep for admin/dashboard) */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* 
+  FOOTBALL GREEN ENERGY THEME
+  Redesigned for sports/energy business with Vietnamese optimization
+*/
+:root {
+  --background: oklch(0.99 0 0);
+  --foreground: oklch(0.15 0 0);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.15 0 0);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0 0);
+
+  /* Football Green - Primary Brand Color */
+  --primary: oklch(0.65 0.19 145);
+  --primary-foreground: oklch(0.98 0 0);
+
+  /* Light green tint for secondary elements */
+  --secondary: oklch(0.96 0.01 145);
+  --secondary-foreground: oklch(0.2 0 0);
+
+  /* Neutral muted for balance */
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.5 0 0);
+
+  /* Energy Yellow - Accent highlights */
+  --accent: oklch(0.75 0.15 85);
+  --accent-foreground: oklch(0.2 0 0);
+
+  --destructive: oklch(0.628 0.25 25);
+  --destructive-foreground: oklch(0.985 0 0);
+
+  /* Lighter borders for breathable UI */
+  --border: oklch(0.94 0 0);
+  --input: oklch(0.94 0 0);
+  --ring: oklch(0.65 0.19 145);
+
+  --radius: 0.75rem;
+
+  /* Sidebar with green tint */
+  --sidebar: oklch(0.98 0.005 145);
+  --sidebar-foreground: oklch(0.15 0 0);
+  --sidebar-primary: oklch(0.65 0.19 145);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.96 0.01 145);
+  --sidebar-accent-foreground: oklch(0.2 0 0);
+  --sidebar-border: oklch(0.94 0 0);
+  --sidebar-ring: oklch(0.65 0.19 145);
+
+  /* Sports-themed chart colors */
+  --chart-1: oklch(0.65 0.19 145); /* Green - Goals */
+  --chart-2: oklch(0.75 0.15 85); /* Yellow - Assists */
+  --chart-3: oklch(0.68 0.2 25); /* Orange - Matches */
+  --chart-4: oklch(0.6 0.22 265); /* Blue - Defense */
+  --chart-5: oklch(0.7 0.18 340); /* Pink - Other */
+}
+
+.dark {
+  --background: oklch(0.15 0 0);
+  --foreground: oklch(0.98 0 0);
+
+  --card: oklch(0.18 0 0);
+  --card-foreground: oklch(0.98 0 0);
+
+  --popover: oklch(0.18 0 0);
+  --popover-foreground: oklch(0.98 0 0);
+
+  /* Brighter green for dark mode visibility */
+  --primary: oklch(0.7 0.2 145);
+  --primary-foreground: oklch(0.15 0 0);
+
+  /* Dark green tint for secondary */
+  --secondary: oklch(0.25 0.02 145);
+  --secondary-foreground: oklch(0.98 0 0);
+
+  --muted: oklch(0.25 0 0);
+  --muted-foreground: oklch(0.65 0 0);
+
+  /* Brighter yellow for dark mode */
+  --accent: oklch(0.78 0.16 85);
+  --accent-foreground: oklch(0.15 0 0);
+
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  --border: oklch(0.25 0 0);
+  --input: oklch(0.25 0 0);
+  --ring: oklch(0.7 0.2 145);
+
+  /* Dark sidebar with green accent */
+  --sidebar: oklch(0.15 0.005 145);
+  --sidebar-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.7 0.2 145);
+  --sidebar-primary-foreground: oklch(0.15 0 0);
+  --sidebar-accent: oklch(0.25 0.02 145);
+  --sidebar-accent-foreground: oklch(0.98 0 0);
+  --sidebar-border: oklch(0.25 0 0);
+  --sidebar-ring: oklch(0.65 0 0);
+
+  /* Dark mode chart colors - more vibrant */
+  --chart-1: oklch(0.7 0.2 145); /* Bright Green */
+  --chart-2: oklch(0.78 0.16 85); /* Bright Yellow */
+  --chart-3: oklch(0.72 0.22 25); /* Bright Orange */
+  --chart-4: oklch(0.65 0.24 265); /* Bright Blue */
+  --chart-5: oklch(0.75 0.2 340); /* Bright Pink */
+}
+
+@layer base {
+  * {
+    /* Removed default borders for breathable UI */
+    @apply outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  /* STRICT TYPOGRAPHY SCALE */
+  h1 {
+    @apply text-3xl font-bold tracking-tight sm:text-4xl;
+  }
+  h2 {
+    @apply text-2xl font-semibold tracking-tight sm:text-3xl;
+  }
+  h3 {
+    @apply text-xl font-semibold sm:text-2xl;
+  }
+  h4 {
+    @apply text-lg font-semibold;
+  }
+  p {
+    @apply text-sm sm:text-base;
+  }
+  small {
+    @apply text-muted-foreground text-xs sm:text-sm;
+  }
+}
