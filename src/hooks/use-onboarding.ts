@@ -1,3 +1,5 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 import { useLocalStorage } from './use-local-storage';
 
 export interface TeamRole {
@@ -36,16 +38,51 @@ export interface UserOnboardingData {
 const STORAGE_KEY = 'phui_de_user_onboarding';
 
 export function useOnboarding() {
-  const [data, setData, clearData] = useLocalStorage<UserOnboardingData | null>(
-    STORAGE_KEY,
-    null,
-  );
+  const queryClient = useQueryClient();
+  const [localData, setLocalData, clearLocalData] =
+    useLocalStorage<UserOnboardingData | null>(STORAGE_KEY, null);
 
+  // Fetch from API
+  const { data: apiResponse, isLoading: isLoadingApi } = useQuery({
+    queryKey: ['onboarding'],
+    queryFn: async () => {
+      try {
+        const response = await api.get<{ data: UserOnboardingData | null }>(
+          '/onboarding',
+        );
+        return response.data;
+      } catch (error) {
+        console.error('Failed to fetch onboarding from API:', error);
+        return null;
+      }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1, // Only retry once
+  });
+
+  // Use API data if available, fallback to localStorage
+  const data = apiResponse || localData;
   const isOnboarded = !!data;
+
+  // Save mutation
+  const saveMutation = useMutation({
+    mutationFn: async (
+      onboardingData: Omit<UserOnboardingData, 'createdAt' | 'approval'>,
+    ) => {
+      return api.post('/onboarding', onboardingData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['onboarding'] });
+    },
+    onError: (error) => {
+      console.error('Failed to save onboarding to API:', error);
+    },
+  });
 
   const saveOnboarding = (
     onboardingData: Omit<UserOnboardingData, 'createdAt' | 'approval'>,
   ) => {
+    // Save to localStorage immediately for offline support
     const fullData: UserOnboardingData = {
       ...onboardingData,
       approval: {
@@ -54,7 +91,10 @@ export function useOnboarding() {
       },
       createdAt: new Date().toISOString(),
     };
-    setData(fullData);
+    setLocalData(fullData);
+
+    // Then sync to API
+    saveMutation.mutate(onboardingData);
   };
 
   const updateApprovalStatus = (
@@ -63,7 +103,7 @@ export function useOnboarding() {
   ) => {
     if (!data) return;
 
-    setData({
+    const updatedData = {
       ...data,
       approval: {
         ...data.approval,
@@ -71,11 +111,15 @@ export function useOnboarding() {
         approvedBy,
         approvedAt: new Date().toISOString(),
       },
-    });
+    };
+
+    setLocalData(updatedData);
+    queryClient.setQueryData(['onboarding'], updatedData);
   };
 
   const resetOnboarding = () => {
-    clearData();
+    clearLocalData();
+    queryClient.setQueryData(['onboarding'], null);
   };
 
   return {
@@ -84,6 +128,8 @@ export function useOnboarding() {
     saveOnboarding,
     updateApprovalStatus,
     resetOnboarding,
+    isLoading: isLoadingApi || saveMutation.isPending,
+    isSaving: saveMutation.isPending,
   };
 }
 

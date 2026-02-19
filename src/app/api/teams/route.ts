@@ -1,28 +1,43 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
-// GET /api/teams - List user's teams
-export async function GET() {
+// GET /api/teams - List teams with optional search
+export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search');
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const supabase = await createClient();
+
+    // Build query
+    let query = supabase
+      .from('teams')
+      .select('id, name, slug, code, logo_url, primary_color, secondary_color, owner_id, created_at, updated_at');
+
+    // Add search filter if provided
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%`);
     }
 
-    // Get teams where user is a member
-    const { data: teams, error } = await supabase
-      .from('teams')
-      .select('*, team_members!inner(user_id)')
-      .eq('team_members.user_id', user.id)
-      .order('created_at', { ascending: false });
+    const { data: teams, error } = await query.order('created_at', {
+      ascending: false,
+    });
 
     if (error) throw error;
 
-    return NextResponse.json({ data: teams });
+    // Add member count to each team
+    const teamsWithCount = await Promise.all(
+      (teams || []).map(async (team) => {
+        const { count } = await supabase
+          .from('team_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('team_id', team.id);
+
+        return { ...team, member_count: count || 0 };
+      }),
+    );
+
+    return NextResponse.json({ data: teamsWithCount });
   } catch (error) {
     console.error('Teams API Error:', error);
     return NextResponse.json(

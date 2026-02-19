@@ -1,19 +1,26 @@
 import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 import type { Team } from '../types/team.types';
-import { MOCK_TEAMS } from '@/lib/mock-data';
 
-async function getTeams() {
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  // Return mock data cast as Team[]
-  // Note: MOCK_TEAMS might need some adjustments to match Team interface perfectly if strict type checking is on,
-  // but for now we cast it to keep it simple.
-  return MOCK_TEAMS as unknown as Team[];
+interface TeamsResponse {
+  data: (Team & { member_count: number })[];
 }
 
-export function useTeams() {
+async function getTeams(search?: string) {
+  const params: Record<string, string> = {};
+  if (search) {
+    params.search = search;
+  }
+  return api.get<TeamsResponse>('/teams', { params });
+}
+
+export function useTeams(search?: string) {
   return useQuery({
-    queryKey: ['teams'],
-    queryFn: getTeams,
+    queryKey: ['teams', search],
+    queryFn: async () => {
+      const response = await getTeams(search);
+      return response.data;
+    },
+    staleTime: 30 * 1000, // 30 seconds
   });
 }

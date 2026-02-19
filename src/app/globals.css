@@ -193,3 +193,79 @@
     @apply text-muted-foreground text-xs sm:text-sm;
   }
 }
+
+/* ============================================================
+   DESIGN SYSTEM UTILITIES
+   Gradient, glassmorphism, and match scoring utilities
+   All using theme tokens for consistency
+   ============================================================ */
+
+@layer components {
+  /* Featured cards — uses primary green gradient */
+  .card-featured {
+    @apply bg-card text-card-foreground relative overflow-hidden rounded-xl border shadow-sm;
+    background: linear-gradient(
+      135deg,
+      oklch(from var(--primary) l c h / 0.08) 0%,
+      oklch(from var(--card) l c h / 1) 60%
+    );
+  }
+
+  /* Scoreboard dark card — prominent element */
+  .card-scoreboard {
+    @apply relative overflow-hidden rounded-2xl border shadow-lg;
+    background: oklch(from var(--foreground) l c h / 0.97);
+    color: oklch(from var(--background) l c h / 1);
+  }
+
+  /* Gradient text using primary */
+  .text-gradient-primary {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(
+      135deg,
+      oklch(from var(--primary) l c h / 1),
+      oklch(from var(--accent) l c h / 1)
+    );
+  }
+
+  /* Subtle section backgrounds */
+  .bg-section {
+    @apply rounded-xl;
+    background: oklch(from var(--muted) l c h / 0.5);
+  }
+
+  /* Result badges */
+  .badge-win {
+    @apply inline-flex items-center justify-center rounded-md font-black;
+    background: oklch(0.45 0.15 145);
+    color: oklch(0.95 0 0);
+  }
+  .badge-draw {
+    @apply inline-flex items-center justify-center rounded-md font-black;
+    background: oklch(0.65 0.15 85);
+    color: oklch(0.15 0 0);
+  }
+  .badge-loss {
+    @apply inline-flex items-center justify-center rounded-md font-black;
+    background: oklch(0.55 0.2 25);
+    color: oklch(0.95 0 0);
+  }
+
+  /* Status dot (live indicator) */
+  .dot-live {
+    @apply h-2 w-2 rounded-full;
+    background: oklch(0.628 0.25 25);
+    box-shadow: 0 0 8px oklch(0.628 0.25 25 / 0.5);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+}

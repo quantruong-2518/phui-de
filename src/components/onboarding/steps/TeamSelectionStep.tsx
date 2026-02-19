@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, ArrowRight, Users } from 'lucide-react';
+import { useTeams } from '@/features/teams/hooks/use-teams';
 
 interface TeamSelectionStepProps {
   onNext: (
@@ -16,29 +17,9 @@ export function TeamSelectionStep({ onNext }: TeamSelectionStepProps) {
   const [mode, setMode] = useState<'select' | 'search'>('select');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const mockTeams = [
-    { id: '1', name: 'Passion FC', code: 'PH001', members: 15, logo: '⚽' },
-    {
-      id: '2',
-      name: 'Đội Bóng Sài Gòn',
-      code: 'SG002',
-      members: 18,
-      logo: '🔥',
-    },
-    {
-      id: '3',
-      name: 'Phủi Đà Nẵng FC',
-      code: 'DN003',
-      members: 22,
-      logo: '🌊',
-    },
-  ];
-
-  const filteredTeams = mockTeams.filter(
-    (team) =>
-      team.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      team.code.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  // Fetch real teams from API
+  const { data: teamsData, isLoading, error } = useTeams(searchQuery);
+  const teams = teamsData || [];
 
   if (mode === 'search') {
     return (
@@ -55,7 +36,7 @@ export function TeamSelectionStep({ onNext }: TeamSelectionStepProps) {
           <div className="relative">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
-              placeholder="Tìm theo tên hoặc mã (vd: #PH001)"
+              placeholder="Tìm theo tên hoặc mã (vd: #TOJI001)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-11 border-2 pl-10"
@@ -64,8 +45,23 @@ export function TeamSelectionStep({ onNext }: TeamSelectionStepProps) {
           </div>
 
           <div className="space-y-3">
-            {filteredTeams.length > 0 ? (
-              filteredTeams.map((team) => (
+            {isLoading ? (
+              <div className="text-muted-foreground py-12 text-center text-sm">
+                <div className="mb-2">Đang tìm kiếm...</div>
+                <div className="bg-muted mx-auto h-2 w-32 animate-pulse rounded" />
+              </div>
+            ) : error ? (
+              <div className="text-destructive py-12 text-center text-sm">
+                <div className="mb-2">Lỗi khi tải dữ liệu</div>
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="text-primary hover:underline"
+                >
+                  Thử lại
+                </button>
+              </div>
+            ) : teams.length > 0 ? (
+              teams.map((team) => (
                 <button
                   key={team.id}
                   onClick={() =>
@@ -80,7 +76,15 @@ export function TeamSelectionStep({ onNext }: TeamSelectionStepProps) {
                   <div className="flex items-center gap-4">
                     {/* Team Logo */}
                     <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-full text-2xl transition-transform group-hover:scale-110">
-                      {team.logo}
+                      {team.logo_url ? (
+                        <img
+                          src={team.logo_url}
+                          alt={team.name}
+                          className="h-full w-full rounded-full object-cover"
+                        />
+                      ) : (
+                        '⚽'
+                      )}
                     </div>
 
                     {/* Team Info */}
@@ -93,7 +97,7 @@ export function TeamSelectionStep({ onNext }: TeamSelectionStepProps) {
                         <span>•</span>
                         <div className="flex items-center gap-1">
                           <Users className="h-3.5 w-3.5" />
-                          <span>{team.members}</span>
+                          <span>{team.member_count || 0}</span>
                         </div>
                       </div>
                     </div>

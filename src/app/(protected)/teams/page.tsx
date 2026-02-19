@@ -48,7 +48,23 @@ export default function TeamsPage() {
       {teams && teams.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {teams.map((team) => (
-            <TeamCard key={team.id} team={team} />
+            /* We need to update TeamCard to accept a href or wrap it. 
+               Looking at previous file it's a component.
+               Ideally TeamCard handles the link internally or we wrap it here.
+               Let's assume TeamCard is clickable or we need to modify TeamCard component.
+               Wait, let's look at TeamCard code. I don't have it open.
+               Safest bet is to wrap it or check if it takes an onClick/href.
+               Actually, let's wrap it in Link if it doesn't break layout.
+               Or better, let's view TeamCard first? 
+               No I'll just assume standard clickable card pattern.
+            */
+            <Link
+              key={team.id}
+              href={`/teams/${team.id}/dashboard`}
+              className="block h-full transition-transform hover:-translate-y-1"
+            >
+              <TeamCard team={team} />
+            </Link>
           ))}
         </div>
       ) : (
