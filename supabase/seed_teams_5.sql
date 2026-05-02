@@ -14,10 +14,10 @@ BEGIN
 
   FOR rec IN
     SELECT * FROM (VALUES
-      ('PassionFC',  'passionfc',  'PASS001', '#22c55e', 'b1000000-0000-0000-0000-000000000001'::uuid, 'Owner PassionFC'),
+      ('PassionFC',  'passionfc',  'PASS001', '#3b82f6', 'b1000000-0000-0000-0000-000000000001'::uuid, 'Owner PassionFC'),
       ('Love',       'love',       'LOV001',  '#ef4444', 'b1000000-0000-0000-0000-000000000002'::uuid, 'Owner Love'),
       ('Lego',       'lego',       'LEG001',  '#facc15', 'b1000000-0000-0000-0000-000000000003'::uuid, 'Owner Lego'),
-      ('Bể Cồn',     'be-con',     'BCO001',  '#3b82f6', 'b1000000-0000-0000-0000-000000000004'::uuid, 'Owner Bể Cồn'),
+      ('Bể Cồn',     'be-con',     'BCO001',  '#22c55e', 'b1000000-0000-0000-0000-000000000004'::uuid, 'Owner Bể Cồn'),
       ('Máy Xúc',    'may-xuc',    'MXC001',  '#f97316', 'b1000000-0000-0000-0000-000000000005'::uuid, 'Owner Máy Xúc')
     ) AS t(name, slug, code, color, owner_id, owner_name)
   LOOP
@@ -38,18 +38,30 @@ BEGIN
       false, false
     ) ON CONFLICT (id) DO NOTHING;
 
-    -- 2. public.users — cập nhật tên + đánh dấu onboarded
-    UPDATE public.users
-    SET name = rec.owner_name, onboarding_completed = true, updated_at = NOW()
-    WHERE id = rec.owner_id::uuid;
+    -- 2. public.users — insert tường minh (không dựa trigger, vì auth.users
+    -- ON CONFLICT DO NOTHING ở trên có thể skip → trigger không fire).
+    INSERT INTO public.users (id, role, name, onboarding_completed)
+    VALUES (rec.owner_id::uuid, 'PLAYER', rec.owner_name, true)
+    ON CONFLICT (id) DO UPDATE SET
+      name = EXCLUDED.name,
+      onboarding_completed = true,
+      updated_at = NOW();
 
-    -- 3. teams
-    INSERT INTO public.teams (name, slug, code, primary_color, secondary_color, owner_id)
-    VALUES (rec.name, rec.slug, rec.code, rec.color, '#ffffff', rec.owner_id::uuid)
+    -- 3. teams (seed teams = pre-approved)
+    INSERT INTO public.teams (
+      name, slug, code, primary_color, secondary_color, owner_id,
+      approval_status, approved_at, approved_by
+    )
+    VALUES (
+      rec.name, rec.slug, rec.code, rec.color, '#ffffff', rec.owner_id::uuid,
+      'approved', NOW(), rec.owner_id::uuid
+    )
     ON CONFLICT (slug) DO UPDATE SET
       name = EXCLUDED.name,
       code = EXCLUDED.code,
-      primary_color = EXCLUDED.primary_color
+      primary_color = EXCLUDED.primary_color,
+      approval_status = 'approved',
+      approved_at = COALESCE(public.teams.approved_at, NOW())
     RETURNING id INTO v_team_id;
 
     -- 4. team_seasons

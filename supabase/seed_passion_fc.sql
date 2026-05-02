@@ -42,22 +42,41 @@ BEGIN
     false, false
   ) ON CONFLICT (id) DO NOTHING;
 
-  -- 2. Trigger handle_new_user đã tạo public.users — update tên + SĐT + onboarding_completed
-  UPDATE public.users
-  SET name = 'Quân Trương', phone = '0345913369', onboarding_completed = true, updated_at = NOW()
-  WHERE id = quan_id;
+  -- 2. public.users — insert tường minh (không dựa trigger, vì auth.users
+  -- ON CONFLICT DO NOTHING ở trên có thể skip → trigger không fire).
+  INSERT INTO public.users (id, role, name, phone, onboarding_completed)
+  VALUES (quan_id, 'PLAYER', 'Quân Trương', '0345913369', true)
+  ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    phone = EXCLUDED.phone,
+    onboarding_completed = true,
+    updated_at = NOW();
 
-  UPDATE public.users
-  SET name = 'Vũ Hoàng', phone = '0333874206', onboarding_completed = true, updated_at = NOW()
-  WHERE id = vu_id;
+  INSERT INTO public.users (id, role, name, phone, onboarding_completed)
+  VALUES (vu_id, 'PLAYER', 'Vũ Hoàng', '0333874206', true)
+  ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    phone = EXCLUDED.phone,
+    onboarding_completed = true,
+    updated_at = NOW();
 
   -- 3. Active season
   SELECT id INTO v_season_id FROM public.seasons WHERE is_active = true LIMIT 1;
 
-  -- 4. Team
-  INSERT INTO public.teams (name, slug, code, primary_color, secondary_color, owner_id)
-  VALUES ('PassionFC', 'passionfc', 'PASS001', '#22c55e', '#ffffff', quan_id)
-  ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name, owner_id = EXCLUDED.owner_id
+  -- 4. Team (seed = pre-approved)
+  INSERT INTO public.teams (
+    name, slug, code, primary_color, secondary_color, owner_id,
+    approval_status, approved_at, approved_by
+  )
+  VALUES (
+    'PassionFC', 'passionfc', 'PASS001', '#22c55e', '#ffffff', quan_id,
+    'approved', NOW(), quan_id
+  )
+  ON CONFLICT (slug) DO UPDATE SET
+    name = EXCLUDED.name,
+    owner_id = EXCLUDED.owner_id,
+    approval_status = 'approved',
+    approved_at = COALESCE(public.teams.approved_at, NOW())
   RETURNING id INTO v_team_id;
 
   -- 5. Team season hookup
