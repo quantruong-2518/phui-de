@@ -1,13 +1,14 @@
 'use client';
 
-import { BarChart3, Crown, History, Settings } from 'lucide-react';
+import { BarChart3, Crown, History, Settings, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const teamNavItems = [
   { segment: 'dashboard', label: 'Tổng quan', icon: BarChart3 },
   { segment: 'matches', label: 'Trận đấu', icon: History },
-  { segment: 'squad', label: 'Thành viên', icon: Crown },
+  { segment: 'members', label: 'Thành viên', icon: Users },
+  { segment: 'squad', label: 'Cầu thủ', icon: Crown },
   { segment: 'settings', label: 'Cài đặt', icon: Settings },
 ];
 

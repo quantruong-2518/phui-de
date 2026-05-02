@@ -24,6 +24,8 @@ export async function GET(request: Request, { params }: Params) {
     .select(
       `id, user_id, role, team_role_id, team_role_label, approval_status,
        requested_at, approved_at, joined_at,
+       jersey_code, position, is_active,
+       matches_played, goals, assists, clean_sheets, total_points,
        user:users!team_members_user_id_fkey (id, name, avatar_url)`,
     )
     .eq('team_id', ctx.team.id)

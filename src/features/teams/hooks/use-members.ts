@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 export type MemberRole = 'owner' | 'admin' | 'member';
+export type Position = 'GK' | 'DF' | 'MF' | 'FW';
 
 export interface TeamMember {
   id: string;
@@ -16,6 +17,14 @@ export interface TeamMember {
   requested_at: string;
   approved_at: string | null;
   joined_at: string;
+  is_active: boolean;
+  jersey_code: string | null;
+  position: Position | null;
+  matches_played: number;
+  goals: number;
+  assists: number;
+  clean_sheets: number;
+  total_points: number;
   user: {
     id: string;
     name: string | null;
@@ -51,6 +60,9 @@ interface UpdateMemberInput {
   role?: 'admin' | 'member';
   team_role_id?: string;
   team_role_label?: string;
+  is_active?: boolean;
+  jersey_code?: string | null;
+  position?: Position | null;
 }
 
 export function useUpdateMember(slug: string) {
@@ -64,6 +76,8 @@ export function useUpdateMember(slug: string) {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['members', slug] });
+      qc.invalidateQueries({ queryKey: ['players', slug] });
+      qc.invalidateQueries({ queryKey: ['team-dashboard', slug] });
       toast.success('Đã cập nhật');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -79,6 +93,8 @@ export function useRemoveMember(slug: string) {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['members', slug] });
+      qc.invalidateQueries({ queryKey: ['players', slug] });
+      qc.invalidateQueries({ queryKey: ['team-dashboard', slug] });
       toast.success('Đã xóa thành viên');
     },
     onError: (err: Error) => toast.error(err.message),

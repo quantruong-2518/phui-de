@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { isTeamAccessError, requireTeamAccess } from '@/lib/auth/team-access';
+import { can } from '@/lib/auth/permissions';
 
 type Params = { params: Promise<{ slug: string; memberId: string }> };
 
@@ -10,14 +11,16 @@ const patchSchema = z
     role: z.enum(['admin', 'member']).optional(),
     team_role_id: z.string().min(1).optional(),
     team_role_label: z.string().min(1).optional(),
+    is_active: z.boolean().optional(),
+    jersey_code: z.string().trim().min(1).max(10).nullable().optional(),
+    position: z.enum(['GK', 'DF', 'MF', 'FW']).nullable().optional(),
   })
   .refine((d) => Object.keys(d).length > 0, { message: 'No fields to update' });
 
-// PATCH — approve/reject pending member, change admin role, or change team_role.
+// PATCH — duyệt request, đổi role, dừng hoạt động, sửa số áo / vị trí.
+// Quy tắc xem `docs/permissions.md`.
 export async function PATCH(request: Request, { params }: Params) {
   const { slug, memberId } = await params;
-  const ctx = await requireTeamAccess(slug, { minRole: 'admin' });
-  if (isTeamAccessError(ctx)) return ctx;
 
   const parsed = patchSchema.safeParse(await request.json());
   if (!parsed.success) {
@@ -27,18 +30,57 @@ export async function PATCH(request: Request, { params }: Params) {
     );
   }
 
-  // Owner cannot demote themselves via this route — guard:
-  if (parsed.data.role) {
+  // Role change yêu cầu owner; còn lại cần admin trở lên.
+  const minRole = parsed.data.role !== undefined ? 'owner' : 'admin';
+  const ctx = await requireTeamAccess(slug, { minRole });
+  if (isTeamAccessError(ctx)) return ctx;
+
+  // Lấy target để check permission cụ thể (kick/deactivate admin → chỉ owner).
+  const needsTargetCheck =
+    parsed.data.role !== undefined ||
+    parsed.data.is_active === false ||
+    parsed.data.approval_status === 'rejected';
+
+  if (needsTargetCheck) {
     const { data: target } = await ctx.supabase
       .from('team_members')
       .select('user_id, role')
       .eq('id', memberId)
       .eq('team_id', ctx.team.id)
       .maybeSingle();
-    if (target?.role === 'owner') {
+
+    if (!target) {
+      return NextResponse.json({ error: 'Member not found' }, { status: 404 });
+    }
+
+    const targetRole = target.role as 'owner' | 'admin' | 'member';
+
+    if (parsed.data.role !== undefined && targetRole === 'owner') {
       return NextResponse.json(
-        { error: 'Cannot change role of the team owner' },
+        { error: 'Không thể đổi vai trò của đội trưởng (owner)' },
         { status: 400 },
+      );
+    }
+
+    // Deactivate-target check: viewer phải có quyền với target.
+    if (
+      parsed.data.is_active === false &&
+      !can('deactivate', { viewer: ctx.member.role, target: targetRole })
+    ) {
+      return NextResponse.json(
+        { error: 'Không có quyền dừng hoạt động thành viên này' },
+        { status: 403 },
+      );
+    }
+
+    // Reject (đẩy approved → rejected): coi như kick. Cùng rule.
+    if (
+      parsed.data.approval_status === 'rejected' &&
+      !can('kick', { viewer: ctx.member.role, target: targetRole })
+    ) {
+      return NextResponse.json(
+        { error: 'Không có quyền từ chối / đẩy thành viên này ra' },
+        { status: 403 },
       );
     }
   }
@@ -62,8 +104,7 @@ export async function PATCH(request: Request, { params }: Params) {
   return NextResponse.json({ success: true });
 }
 
-// DELETE — remove member from team. Owner cannot be removed; user can also
-// self-remove (kick themselves).
+// DELETE — kick. Owner luôn bảo vệ; admin chỉ kick được member; user tự rời.
 export async function DELETE(_req: Request, { params }: Params) {
   const { slug, memberId } = await params;
   const ctx = await requireTeamAccess(slug);
@@ -79,13 +120,11 @@ export async function DELETE(_req: Request, { params }: Params) {
   if (!target) {
     return NextResponse.json({ error: 'Member not found' }, { status: 404 });
   }
-  if (target.role === 'owner') {
-    return NextResponse.json({ error: 'Cannot remove the team owner' }, { status: 400 });
-  }
 
+  const targetRole = target.role as 'owner' | 'admin' | 'member';
   const isSelf = target.user_id === ctx.user.id;
-  const isAdminOrOwner = ctx.member.role === 'owner' || ctx.member.role === 'admin';
-  if (!isSelf && !isAdminOrOwner) {
+
+  if (!can('kick', { viewer: ctx.member.role, target: targetRole, isSelf })) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
