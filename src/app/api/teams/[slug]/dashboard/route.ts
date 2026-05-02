@@ -26,9 +26,11 @@ export async function GET(_req: Request, { params }: Params) {
     topScorersRes,
   ] = await Promise.all([
     supabase
-      .from('players')
+      .from('team_members')
       .select('id', { count: 'exact', head: true })
-      .eq('team_id', team.id),
+      .eq('team_id', team.id)
+      .eq('approval_status', 'approved')
+      .eq('is_active', true),
     seasonId
       ? supabase
           .from('team_seasons')
@@ -44,16 +46,38 @@ export async function GET(_req: Request, { params }: Params) {
       .order('match_date', { ascending: false })
       .limit(5),
     supabase
-      .from('players')
-      .select('id, name, code, position, goals, assists, total_points')
+      .from('team_members')
+      .select(
+        `id, jersey_code, position, goals, assists, total_points,
+         user:users!team_members_user_id_fkey(name)`,
+      )
       .eq('team_id', team.id)
+      .eq('approval_status', 'approved')
+      .eq('is_active', true)
       .order('total_points', { ascending: false })
       .limit(5),
   ]);
 
   const seasonStats = teamSeasonRes?.data ?? null;
   const recentMatches = recentMatchesRes.data ?? [];
-  const topScorers = topScorersRes.data ?? [];
+  type RawTopScorer = {
+    id: string;
+    jersey_code: string | null;
+    position: string | null;
+    goals: number;
+    assists: number;
+    total_points: number;
+    user: { name: string | null } | null;
+  };
+  const topScorers = ((topScorersRes.data ?? []) as unknown as RawTopScorer[]).map((s) => ({
+    id: s.id,
+    name: s.user?.name || 'Ẩn danh',
+    code: s.jersey_code,
+    position: s.position,
+    goals: s.goals,
+    assists: s.assists,
+    total_points: s.total_points,
+  }));
 
   const matchesPlayed = seasonStats?.matches_played ?? 0;
   const wins = seasonStats?.wins ?? 0;

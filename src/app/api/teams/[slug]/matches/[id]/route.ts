@@ -19,7 +19,8 @@ const patchSchema = z
   })
   .refine((d) => Object.keys(d).length > 0, { message: 'No fields to update' });
 
-// GET — match detail with events
+// GET — match detail with events. Server reshapes team_member join into the
+// same `player_id` / `player.{name,code,position}` shape the UI expects.
 export async function GET(_req: Request, { params }: Params) {
   const { slug, id } = await params;
   const ctx = await requireTeamAccess(slug, { allowPublic: true });
@@ -29,8 +30,11 @@ export async function GET(_req: Request, { params }: Params) {
     .from('matches')
     .select(
       `id, opponent, field, match_date, goals_scored, goals_conceded, result, status, season_id, notes, created_at,
-       events:match_events(id, player_id, event_type, minute, created_at,
-         player:players!match_events_player_id_fkey(id, name, code, position))`,
+       events:match_events(id, team_member_id, event_type, minute, created_at,
+         member:team_members!match_events_team_member_id_fkey(
+           id, jersey_code, position,
+           user:users!team_members_user_id_fkey(id, name)
+         ))`,
     )
     .eq('id', id)
     .eq('team_id', ctx.team.id)
@@ -42,7 +46,40 @@ export async function GET(_req: Request, { params }: Params) {
   if (!match) {
     return NextResponse.json({ error: 'Match not found' }, { status: 404 });
   }
-  return NextResponse.json({ data: match });
+
+  type RawEvent = {
+    id: string;
+    team_member_id: string;
+    event_type: string;
+    minute: number | null;
+    created_at: string;
+    member: {
+      id: string;
+      jersey_code: string | null;
+      position: string | null;
+      user: { id: string; name: string | null } | null;
+    } | null;
+  };
+  const events = ((match as unknown as { events?: RawEvent[] }).events ?? []).map(
+    (ev) => ({
+      id: ev.id,
+      player_id: ev.team_member_id,
+      event_type: ev.event_type,
+      minute: ev.minute,
+      created_at: ev.created_at,
+      player: ev.member
+        ? {
+            id: ev.member.id,
+            name: ev.member.user?.name || 'Ẩn danh',
+            code: ev.member.jersey_code,
+            position: ev.member.position,
+          }
+        : null,
+    }),
+  );
+
+  const reshaped = { ...(match as Record<string, unknown>), events };
+  return NextResponse.json({ data: reshaped });
 }
 
 // PATCH — update score / status / etc. Auto-derive `result` from goals if not given

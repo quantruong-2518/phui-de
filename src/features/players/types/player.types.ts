@@ -1,10 +1,14 @@
 export type PlayerPosition = 'GK' | 'DF' | 'MF' | 'FW';
 
+/**
+ * Player = squad-row view of a `team_members` record. Stats và config gameplay
+ * (jersey, position) gắn với cặp user×team. `name` / `avatar_url` đến từ user
+ * liên kết, không còn lưu trên row riêng.
+ */
 export interface Player {
-  id: string;
-  team_id: string;
+  id: string; // team_members.id
   name: string;
-  code: string | null;
+  code: string | null; // jersey number
   position: PlayerPosition | null;
   avatar_url: string | null;
   matches_played: number;
@@ -16,18 +20,9 @@ export interface Player {
   updated_at: string;
 }
 
-export interface CreatePlayerInput {
-  name: string;
-  code?: string;
-  position?: PlayerPosition;
-  avatar_url?: string;
-}
-
 export interface UpdatePlayerInput {
-  name?: string;
   code?: string | null;
   position?: PlayerPosition | null;
-  avatar_url?: string | null;
 }
 
 export const POSITION_LABEL: Record<PlayerPosition, string> = {

@@ -1,69 +1,62 @@
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
 import { isTeamAccessError, requireTeamAccess } from '@/lib/auth/team-access';
 
 type Params = { params: Promise<{ slug: string }> };
 
-const createSchema = z.object({
-  name: z.string().trim().min(2).max(80),
-  code: z.string().trim().min(1).max(10).optional(),
-  position: z.enum(['GK', 'DF', 'MF', 'FW']).nullable().optional(),
-  avatar_url: z.string().url().nullable().optional(),
-});
+interface RawTeamMemberRow {
+  id: string;
+  jersey_code: string | null;
+  position: 'GK' | 'DF' | 'MF' | 'FW' | null;
+  matches_played: number;
+  goals: number;
+  assists: number;
+  clean_sheets: number;
+  total_points: number;
+  is_active: boolean;
+  created_at: string;
+  user: { id: string; name: string | null; avatar_url: string | null } | null;
+}
 
-// GET /api/teams/[slug]/players — list squad
+// GET /api/teams/[slug]/players — squad. Đọc từ team_members (chỉ approved &
+// active). Stats giờ thuộc về cặp user×team.
 export async function GET(_req: Request, { params }: Params) {
   const { slug } = await params;
   const ctx = await requireTeamAccess(slug, { allowPublic: true });
   if (isTeamAccessError(ctx)) return ctx;
 
   const { data, error } = await ctx.supabase
-    .from('players')
-    .select('id, name, code, position, avatar_url, matches_played, goals, assists, clean_sheets, total_points, created_at')
+    .from('team_members')
+    .select(
+      `id, jersey_code, position, matches_played, goals, assists, clean_sheets,
+       total_points, is_active, joined_at,
+       user:users!team_members_user_id_fkey (id, name, avatar_url)`,
+    )
     .eq('team_id', ctx.team.id)
+    .eq('approval_status', 'approved')
+    .eq('is_active', true)
     .order('total_points', { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: 'Failed to fetch players' }, { status: 500 });
-  }
-  return NextResponse.json({ data });
-}
-
-// POST /api/teams/[slug]/players — add player. Admin/owner only.
-export async function POST(request: Request, { params }: Params) {
-  const { slug } = await params;
-  const ctx = await requireTeamAccess(slug, { minRole: 'admin' });
-  if (isTeamAccessError(ctx)) return ctx;
-
-  const parsed = createSchema.safeParse(await request.json());
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: 'Invalid input', details: parsed.error.flatten() },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: 'Failed to fetch squad' }, { status: 500 });
   }
 
-  const { data: player, error } = await ctx.supabase
-    .from('players')
-    .insert({
-      team_id: ctx.team.id,
-      name: parsed.data.name,
-      code: parsed.data.code ?? null,
-      position: parsed.data.position ?? null,
-      avatar_url: parsed.data.avatar_url ?? null,
-    })
-    .select()
-    .single();
+  const rows = (data ?? []) as unknown as (Omit<RawTeamMemberRow, 'created_at'> & {
+    joined_at: string;
+  })[];
+  const formatted = rows.map((m) => ({
+    id: m.id,
+    name: m.user?.name || 'Ẩn danh',
+    code: m.jersey_code,
+    position: m.position,
+    avatar_url: m.user?.avatar_url ?? null,
+    matches_played: m.matches_played,
+    goals: m.goals,
+    assists: m.assists,
+    clean_sheets: m.clean_sheets,
+    total_points: m.total_points,
+    created_at: m.joined_at,
+    updated_at: m.joined_at,
+  }));
 
-  if (error) {
-    if (error.code === '23505') {
-      return NextResponse.json(
-        { error: 'Số áo đã tồn tại trong đội' },
-        { status: 409 },
-      );
-    }
-    return NextResponse.json({ error: 'Failed to create player' }, { status: 500 });
-  }
-
-  return NextResponse.json({ data: player }, { status: 201 });
+  return NextResponse.json({ data: formatted });
 }

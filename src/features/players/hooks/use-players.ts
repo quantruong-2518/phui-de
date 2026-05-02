@@ -2,11 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import type {
-  CreatePlayerInput,
-  Player,
-  UpdatePlayerInput,
-} from '../types/player.types';
+import type { Player, UpdatePlayerInput } from '../types/player.types';
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
@@ -43,28 +39,6 @@ export function usePlayer(slug: string, id: string | undefined) {
   });
 }
 
-export function useCreatePlayer(slug: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: CreatePlayerInput) => {
-      const json = await fetchJson<{ data: Player }>(
-        `/api/teams/${slug}/players`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(input),
-        },
-      );
-      return json.data;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['players', slug] });
-      toast.success('Đã thêm cầu thủ');
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
-}
-
 export function useUpdatePlayer(slug: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -76,6 +50,8 @@ export function useUpdatePlayer(slug: string) {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['players', slug] });
+      qc.invalidateQueries({ queryKey: ['members', slug] });
+      qc.invalidateQueries({ queryKey: ['team-dashboard', slug] });
       toast.success('Đã cập nhật');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -89,7 +65,9 @@ export function useDeletePlayer(slug: string) {
       fetchJson(`/api/teams/${slug}/players/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['players', slug] });
-      toast.success('Đã xóa cầu thủ');
+      qc.invalidateQueries({ queryKey: ['members', slug] });
+      qc.invalidateQueries({ queryKey: ['team-dashboard', slug] });
+      toast.success('Đã xóa khỏi đội');
     },
     onError: (err: Error) => toast.error(err.message),
   });

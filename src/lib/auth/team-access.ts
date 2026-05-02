@@ -62,12 +62,14 @@ export async function requireTeamAccess(
 
   const { data: member } = await supabase
     .from('team_members')
-    .select('role, approval_status')
+    .select('role, approval_status, is_active')
     .eq('team_id', team.id)
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (!member || member.approval_status !== 'approved') {
+  const isActiveMember =
+    member && member.approval_status === 'approved' && member.is_active !== false;
+  if (!isActiveMember) {
     if (opts.allowPublic) {
       return {
         user: { id: user.id, email: user.email },
