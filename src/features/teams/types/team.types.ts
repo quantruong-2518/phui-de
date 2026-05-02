@@ -1,3 +1,6 @@
+export type TeamApprovalStatus = 'pending' | 'approved' | 'rejected';
+export type MyMembershipStatus = TeamApprovalStatus | null;
+
 export interface Team {
   id: string;
   name: string;
@@ -7,7 +10,10 @@ export interface Team {
   primary_color: string | null;
   secondary_color: string | null;
   owner_id: string;
+  approval_status?: TeamApprovalStatus;
   member_count?: number; // Optional, added by API
+  /** Membership state of the current user vs this team. */
+  my_membership_status?: MyMembershipStatus;
   created_at: string;
   updated_at: string;
 }

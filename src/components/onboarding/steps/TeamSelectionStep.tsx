@@ -18,8 +18,11 @@ export function TeamSelectionStep({ onNext }: TeamSelectionStepProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch real teams from API
-  const { data: teamsData, isLoading, error } = useTeams(searchQuery);
-  const teams = teamsData || [];
+  const { data: teamsData, isLoading, error } = useTeams({
+    scope: 'all',
+    search: searchQuery,
+  });
+  const teams = teamsData?.data ?? [];
 
   if (mode === 'search') {
     return (

@@ -15,7 +15,8 @@ export async function GET(request: Request) {
 
     let countQuery = supabase
       .from('teams')
-      .select('id', { count: 'exact', head: true });
+      .select('id', { count: 'exact', head: true })
+      .eq('approval_status', 'approved');
 
     let dataQuery = supabase
       .from('teams')
@@ -26,6 +27,7 @@ export async function GET(request: Request) {
         logo_url,
         owner:users!teams_owner_id_fkey(name)
       `)
+      .eq('approval_status', 'approved')
       .order('created_at', { ascending: false })
       .range(from, to);
 
