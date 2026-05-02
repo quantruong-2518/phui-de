@@ -45,7 +45,7 @@ const { data, error } = await supabase.rpc('create_team_with_owner', {
 
 ---
 
-### handle_new_user `migration 002`
+### handle_new_user `migration 002 → 008 (latest)`
 
 AFTER INSERT trigger trên `auth.users`. Tự tạo row tương ứng trong `public.users`.
 
@@ -55,7 +55,13 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 ```
 
-Default `role='PLAYER'`, lấy `name` từ `raw_user_meta_data->>'full_name'`, `avatar_url` từ `raw_user_meta_data->>'avatar_url'` (Google OAuth provides these).
+Latest version (migration 008) ghi:
+- `role` ← `raw_user_meta_data.role` (default `'PLAYER'`)
+- `name` ← `raw_user_meta_data.full_name` (rỗng nếu không có)
+- `phone` ← `NEW.phone` (real phone auth) **HOẶC** `raw_user_meta_data.phone` (synthetic email token approach hiện tại)
+- `avatar_url` ← `raw_user_meta_data.avatar_url`
+
+App hiện tại dùng synthetic email → register code truyền phone qua `options.data.phone` → trigger đọc từ `raw_user_meta_data.phone`. Xem [[../modules/auth#implementation-synthetic-email-token]].
 
 ---
 

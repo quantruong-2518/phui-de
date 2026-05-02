@@ -95,11 +95,14 @@ Options:
 
 ## Frontend touchpoints
 
-- `src/app/(protected)/teams/page.tsx` — list "đội của tôi"
-- `src/app/(protected)/teams/create/page.tsx` + `client.tsx` — form tạo đội
+- `src/app/(protected)/teams/page.tsx` — render 2 section: "Đội của tôi" (`scope=mine`) + "Khám phá đội khác" (`scope=all` minus mine)
+- `src/app/(protected)/teams/create/page.tsx` + `client.tsx` — form tạo đội (gọi RPC qua `/api/teams` POST)
+- `src/app/(protected)/teams/[id]/layout.tsx` — server component fetch team, header + nav tab
 - `src/app/(protected)/teams/[id]/dashboard/page.tsx` — server component fetch dashboard
 - `src/features/teams/components/TeamCard.tsx`
-- `src/features/teams/hooks/use-teams.ts`
+- `src/features/teams/hooks/use-teams.ts` — `useTeams({ scope, search })`
+- `src/features/teams/hooks/use-team.ts` — `useTeam(slug)`, `useTeamDashboard(slug)`, `useUpdateTeam(slug)`
+- `src/features/teams/hooks/use-members.ts` — `useTeamMembers(slug, status?)`, `useUpdateMember`, `useRemoveMember`
 - `src/features/teams/types/team.types.ts`
 
 ## See also

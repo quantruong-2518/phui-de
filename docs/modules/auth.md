@@ -2,15 +2,35 @@
 
 ## Mục đích
 
-Đăng ký + đăng nhập bằng **số điện thoại + mật khẩu** (Supabase Phone Auth, không qua SMS OTP). Mỗi số chỉ có 1 tài khoản (Supabase Auth tự enforce `auth.users.phone` UNIQUE).
+UX phone-only: user đăng ký + đăng nhập bằng **số điện thoại + mật khẩu**. Phone không cần verify (không SMS, không OTP). Mỗi số 1 tài khoản, tự enforce qua Supabase Auth + UNIQUE INDEX trên `public.users.phone`.
 
 Phạm vi MVP: **chỉ role PLAYER**. DB enum vẫn giữ FIELD_OWNER/VENDOR/ADMIN cho tương lai nhưng UI không cho chọn.
 
+## Implementation: synthetic email token
+
+Supabase Auth bắt buộc 1 identifier — dùng phone trực tiếp đụng vào Phone provider (đòi SMS provider). Workaround: tự sinh **email token** từ phone:
+
+```
+phone "0345913369"  ─normalizePhone()→  "+84345913369"
+                    ─phoneToAuthToken()→  "84345913369@phude-auth.app"
+```
+
+`@phude-auth.app` chỉ là format (không phải domain thật, không gửi mail). Email này:
+- Nằm ở `auth.users.email` để Supabase chấp nhận
+- KHÔNG bao giờ hiển thị/select trong app — UI luôn phone
+- Phone thật lưu ở `public.users.phone` qua trigger (đọc từ `raw_user_meta_data.phone` truyền lúc signUp)
+
+Phone uniqueness được đảm bảo 2 tầng:
+1. `auth.users.email` UNIQUE (Supabase enforce) → 2 phone khác nhau → 2 email token khác → không trùng
+2. `idx_users_phone_unique` trên `public.users.phone WHERE NOT NULL` (migration 008)
+
 ## Supabase Dashboard config bắt buộc
 
-- **Authentication → Sign In / Up** → bật **Phone provider**
-- **Phone confirmations** → **Tắt** (không gửi OTP, không cần SMS provider)
-- (Khuyến nghị) Tắt **Email provider** nếu muốn phone-only thuần
+https://supabase.com/dashboard/project/<ref>/auth/providers
+
+- **Email provider** → **Enable**
+- **Confirm email** → **TẮT** (vì email là token fake, không có inbox để click confirm)
+- Phone provider có/không đều được, không xài
 
 ## Bảng & cột
 
@@ -22,25 +42,37 @@ Xem [[../database/schema|schema]] cho chi tiết.
 
 ## Flow
 
-### Đăng ký (phone + password)
+### Đăng ký
 
 1. User submit form `/register` với `phone` + `password` (≥8 ký tự)
-2. Client `normalizePhone()` đổi `0345913369` → `+84345913369` (E.164)
-3. `supabase.auth.signUp({ phone, password })` → Supabase tạo `auth.users` row với `phone` UNIQUE
-4. Trigger DB `handle_new_user` (migration 002 + 007) tự copy `phone` xuống `public.users`, set `role='PLAYER'`, `onboarding_completed=false`
-5. Redirect `/login?registered=1`
+2. Client `normalizePhone()` đổi `0345913369` → `+84345913369`
+3. Client `phoneToAuthToken()` đổi `+84345913369` → `84345913369@phude-auth.app`
+4. `supabase.auth.signUp({ email: token, password, options: { data: { phone } } })`
+5. Trigger DB `handle_new_user` (migration 002 + 008) tự ghi `public.users`:
+   - `phone` lấy từ `NEW.phone` (case real phone auth) hoặc `raw_user_meta_data.phone` (case synthetic — đây)
+   - `role = 'PLAYER'`, `onboarding_completed = false`
+6. Redirect `/login?registered=1`
 
 ### Đăng nhập
 
 1. `/login` form: phone + password
-2. Client normalize → `signInWithPassword({ phone, password })`
-3. Cookie session set. Middleware redirect:
-   - `onboarding_completed=false` → `/onboarding`
-   - `onboarding_completed=true` → `/teams`
+2. Client `phoneToAuthToken(phone)` → email token
+3. `signInWithPassword({ email: token, password })`
+4. Cookie session set. Middleware redirect:
+   - `onboarding_completed = false` → `/onboarding`
+   - `onboarding_completed = true` → `/teams`
+
+### Lỗi Supabase thường gặp
+
+| Message | Nguyên nhân | Fix |
+|---|---|---|
+| "Email signups are disabled" | Email provider chưa bật | Dashboard → Email → Enable |
+| "Email address invalid" | TLD bị reject (.local, .test, …) | Code đã dùng `.app` (TLD thật) |
+| "Phone signups are disabled" | Code cũ gọi `signUp({ phone })` | Đảm bảo dùng `phoneToAuthToken` |
 
 ### Quên mật khẩu
 
-Hiện chưa hỗ trợ self-service vì cần SMS OTP. UI báo "liên hệ quản trị viên". Khi có SMS provider → bật `Phone confirmations` + thay form quên mật khẩu bằng OTP flow.
+Hiện chưa hỗ trợ self-service vì email là token fake (không reset link tới được). UI `/forgot-password` báo "liên hệ admin". Khi muốn bật → cần đổi sang Phone Auth thật (cấu hình SMS provider) hoặc tích hợp SMS OTP qua provider riêng.
 
 ### Đăng xuất
 
