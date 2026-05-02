@@ -2,6 +2,20 @@
 
 ## Tables
 
+### users (Auth & Roles)
+
+```sql
+id              UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE
+name            TEXT
+role            TEXT CHECK (role IN ('PLAYER', 'FIELD_OWNER', 'VENDOR', 'ADMIN')) DEFAULT 'PLAYER'
+phone           TEXT
+avatar_url      TEXT
+onboarding_completed BOOLEAN DEFAULT false
+verification_status  TEXT CHECK (verification_status IN ('PENDING', 'VERIFIED', 'REJECTED')) DEFAULT 'PENDING'
+created_at      TIMESTAMPTZ DEFAULT NOW()
+updated_at      TIMESTAMPTZ DEFAULT NOW()
+```
+
 ### players
 
 ```sql

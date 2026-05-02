@@ -1,5 +1,3 @@
-'use client';
-
 import {
   Trophy,
   Target,
@@ -9,44 +7,86 @@ import {
   Calendar,
   Settings,
 } from 'lucide-react';
-import {
-  MOCK_PASSION_FC_STATS,
-  MOCK_PASSION_FC_PLAYERS,
-  MOCK_PASSION_FC,
-} from '@/lib/mock-data';
-import { useMatchStore } from '@/stores/use-match-store';
 import { UpcomingMatches } from '@/components/match/UpcomingMatches';
 import { LiveMatchScoring } from '@/components/match/LiveMatchScoring';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/server';
+import { notFound } from 'next/navigation';
 
-const resultBadge: Record<string, string> = {
-  W: 'badge-win',
-  D: 'badge-draw',
-  L: 'badge-loss',
-};
-
-export default function TeamDashboardPage({
+export default async function TeamDashboardPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const { liveMatch } = useMatchStore();
-  const stats = MOCK_PASSION_FC_STATS;
-  const topPlayers = [...MOCK_PASSION_FC_PLAYERS]
-    .sort((a, b) => b.points - a.points)
-    .slice(0, 5);
+  const { id: slug } = await params;
+  const supabase = await createClient();
+
+  // 1. Fetch Team info
+  const { data: team, error: teamError } = await supabase
+    .from('teams')
+    .select('*')
+    .eq('slug', slug)
+    .single();
+
+  if (teamError || !team) {
+    notFound();
+  }
+
+  // 2. Fetch Active Season Stats
+  const { data: activeSeason } = await supabase
+    .from('seasons')
+    .select('id')
+    .eq('is_active', true)
+    .single();
+
+  let stats = {
+    wins: 0,
+    losses: 0,
+    goalsScored: 0,
+    totalMatches: 0,
+    winRate: 0,
+    recentForm: ['-', '-', '-', '-', '-'],
+  };
+
+  if (activeSeason) {
+    const { data: teamSeason } = await supabase
+      .from('team_seasons')
+      .select('*')
+      .eq('team_id', team.id)
+      .eq('season_id', activeSeason.id)
+      .single();
+
+    if (teamSeason) {
+      const totalMatches = teamSeason.matches_played || 0;
+      const wins = teamSeason.wins || 0;
+      stats = {
+        wins,
+        losses: teamSeason.losses || 0,
+        goalsScored: teamSeason.goals_scored || 0,
+        totalMatches,
+        winRate: totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0,
+        recentForm: ['-', '-', '-', '-', '-'], // Placeholder for actual match history
+      };
+    }
+  }
+
+  // 3. Fetch Top Players (Mock for now since we don't have match_events yet)
+  const topPlayers: any[] = [];
 
   return (
     <div className="space-y-6">
-      {/* 1. Live Match (Highest Priority) */}
-      {liveMatch && (
-        <div className="animate-in zoom-in-95 duration-500">
-          <LiveMatchScoring />
-        </div>
-      )}
+      <div>
+        <h1 className="text-2xl font-bold">{team.name}</h1>
+        <p className="text-muted-foreground text-sm">Mã đội: {team.code}</p>
+      </div>
 
-      {/* 2. Upcoming / Booking (If no live match) */}
-      {!liveMatch && <UpcomingMatches />}
+      {/* 1. Live Match (Highest Priority) - Client Component */}
+      <div className="animate-in zoom-in-95 duration-500">
+        <LiveMatchScoring />
+      </div>
+
+      {/* 2. Upcoming / Booking */}
+      <UpcomingMatches />
 
       {/* 3. Stats Summary */}
       <div className="card-featured grid grid-cols-2 gap-3 p-4 sm:grid-cols-4">
@@ -94,15 +134,10 @@ export default function TeamDashboardPage({
               {stats.totalMatches} trận
             </span>
           </div>
-          <div className="flex gap-1.5">
-            {stats.recentForm.map((r, i) => (
-              <div
-                key={i}
-                className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-black ${resultBadge[r]}`}
-              >
-                {r}
-              </div>
-            ))}
+          <div className="flex gap-1.5 opacity-50">
+            <span className="text-muted-foreground text-xs italic">
+              Chưa có dữ liệu thi đấu
+            </span>
           </div>
         </div>
 
@@ -111,40 +146,27 @@ export default function TeamDashboardPage({
           <div className="mb-4 flex items-center justify-between">
             <h3 className="font-bold">Cầu thủ xuất sắc</h3>
             <Link
-              href={`/teams/${params.id}/squad`}
+              href={`/teams/${slug}/squad`}
               className="text-primary hover:text-primary/80 text-xs font-bold transition-colors"
             >
               Xem tất cả
             </Link>
           </div>
           <div className="space-y-2">
-            {topPlayers.slice(0, 3).map((p, i) => (
-              <div
-                key={p.id}
-                className="bg-muted/30 hover:bg-muted/50 flex items-center gap-3 rounded-lg px-3 py-2 transition-colors"
-              >
-                <div
-                  className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-black ${
-                    i === 0
-                      ? 'bg-primary/20 text-primary'
-                      : i === 1
-                        ? 'bg-secondary text-secondary-foreground'
-                        : 'bg-muted text-muted-foreground'
-                  }`}
-                >
-                  {i + 1}
-                </div>
-                <div className="flex flex-1 items-center gap-2">
-                  <span className="text-primary font-bold">#{p.code}</span>
-                  <span className="truncate text-sm font-semibold">
-                    {p.name}
-                  </span>
-                </div>
-                <div className="text-primary text-sm font-black">
-                  {p.points}
-                </div>
+            {topPlayers.length === 0 ? (
+              <div className="text-muted-foreground text-xs italic opacity-50">
+                Chưa có số liệu
               </div>
-            ))}
+            ) : (
+              topPlayers.slice(0, 3).map((p, i) => (
+                <div
+                  key={p.id}
+                  className="bg-muted/30 hover:bg-muted/50 flex items-center gap-3 rounded-lg px-3 py-2 transition-colors"
+                >
+                  {/* Player row template */}
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -158,7 +180,7 @@ export default function TeamDashboardPage({
           </span>
         </button>
         <Link
-          href={`/teams/${params.id}/settings`}
+          href={`/teams/${slug}/settings`}
           className="bg-muted/30 hover:bg-muted/50 flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-6 transition-colors"
         >
           <Settings className="text-muted-foreground h-6 w-6" />

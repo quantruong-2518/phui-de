@@ -4,7 +4,25 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import type { LoginInput, RegisterInput } from '../validations/auth-schemas';
+import {
+  normalizePhone,
+  phoneToAuthToken,
+  type LoginInput,
+  type RegisterInput,
+} from '../validations/auth-schemas';
+
+function friendlyAuthError(message: string): string {
+  if (/already registered|already exists|duplicate|unique/i.test(message)) {
+    return 'Số điện thoại này đã được đăng ký.';
+  }
+  if (/invalid login credentials|invalid credentials/i.test(message)) {
+    return 'Số điện thoại hoặc mật khẩu không đúng.';
+  }
+  if (/email.*invalid|invalid.*email/i.test(message)) {
+    return 'Lỗi định danh — kiểm tra Supabase Dashboard đã tắt "Confirm email" chưa.';
+  }
+  return message;
+}
 
 export function useAuth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -14,16 +32,18 @@ export function useAuth() {
   const login = async (data: LoginInput) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword(data);
+      const { error } = await supabase.auth.signInWithPassword({
+        email: phoneToAuthToken(data.phone),
+        password: data.password,
+      });
       if (error) throw error;
 
       toast.success('Đăng nhập thành công');
       router.push('/teams');
       router.refresh();
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Đăng nhập thất bại';
-      toast.error(message);
+      const raw = error instanceof Error ? error.message : 'Đăng nhập thất bại';
+      toast.error(friendlyAuthError(raw));
     } finally {
       setIsLoading(false);
     }
@@ -32,39 +52,24 @@ export function useAuth() {
   const register = async (data: RegisterInput) => {
     setIsLoading(true);
     try {
+      const phone = normalizePhone(data.phone);
       const { error } = await supabase.auth.signUp({
-        email: data.email,
+        email: phoneToAuthToken(data.phone),
         password: data.password,
         options: {
           emailRedirectTo: `${location.origin}/auth/callback`,
+          data: { phone },
         },
       });
       if (error) throw error;
 
-      toast.success('Đăng ký thành công! Vui lòng kiểm tra email.');
-      router.push('/verify-email');
+      toast.success('Đăng ký thành công! Đăng nhập để tiếp tục.');
+      router.push('/login?registered=1');
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Đăng ký thất bại';
-      toast.error(message);
+      const raw = error instanceof Error ? error.message : 'Đăng ký thất bại';
+      toast.error(friendlyAuthError(raw));
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const loginWithGoogle = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${location.origin}/auth/callback`,
-        },
-      });
-      if (error) throw error;
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Lỗi đăng nhập Google';
-      toast.error(message);
     }
   };
 
@@ -81,7 +86,6 @@ export function useAuth() {
   return {
     login,
     register,
-    loginWithGoogle,
     logout,
     isLoading,
   };

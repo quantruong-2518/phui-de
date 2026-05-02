@@ -20,60 +20,66 @@ import {
 } from '@/components/ui/select';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { useCreatePlayer } from '../hooks/use-create-player';
+import { useCreatePlayer } from '../hooks/use-players';
 import {
   createPlayerSchema,
   type CreatePlayerSchema,
 } from '../validations/player-schemas';
-import { useParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
-export function PlayerForm() {
-  const params = useParams();
-  const slug = params.slug as string;
-  const { mutate: createPlayer, isPending } = useCreatePlayer(slug);
+export function PlayerForm({
+  slug,
+  onCreated,
+}: {
+  slug: string;
+  onCreated?: () => void;
+}) {
+  const { mutate, isPending } = useCreatePlayer(slug);
 
   const form = useForm<CreatePlayerSchema>({
     resolver: zodResolver(createPlayerSchema),
-    defaultValues: {
-      name: '',
-      code: '',
-      position: 'MID', // Default
-    },
+    defaultValues: { name: '', code: '', position: 'MF' },
   });
 
   function onSubmit(data: CreatePlayerSchema) {
-    createPlayer(data);
+    mutate(data, {
+      onSuccess: () => {
+        form.reset({ name: '', code: '', position: 'MF' });
+        onCreated?.();
+      },
+    });
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem className="col-span-2">
-                <FormLabel>Tên cầu thủ</FormLabel>
-                <FormControl>
-                  <Input placeholder="Nguyễn Văn A" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Tên cầu thủ</FormLabel>
+              <FormControl>
+                <Input placeholder="Nguyễn Văn A" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
+        <div className="grid grid-cols-2 gap-3">
           <FormField
             control={form.control}
             name="code"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Số áo / Mã</FormLabel>
+                <FormLabel>Số áo</FormLabel>
                 <FormControl>
                   <Input placeholder="10" {...field} />
                 </FormControl>
-                <FormDescription>Phải là duy nhất trong đội.</FormDescription>
+                <FormDescription className="text-xs">
+                  Duy nhất trong đội.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -85,20 +91,17 @@ export function PlayerForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Vị trí</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Chọn vị trí" />
+                      <SelectValue placeholder="Chọn" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="GK">Thủ môn (GK)</SelectItem>
-                    <SelectItem value="DEF">Hậu vệ (DEF)</SelectItem>
-                    <SelectItem value="MID">Tiền vệ (MID)</SelectItem>
-                    <SelectItem value="FWD">Tiền đạo (FWD)</SelectItem>
+                    <SelectItem value="GK">Thủ môn</SelectItem>
+                    <SelectItem value="DF">Hậu vệ</SelectItem>
+                    <SelectItem value="MF">Tiền vệ</SelectItem>
+                    <SelectItem value="FW">Tiền đạo</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

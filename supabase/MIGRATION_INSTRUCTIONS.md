@@ -12,11 +12,9 @@
    - Click "SQL Editor" in left sidebar
    - Click "New Query"
 
-3. **Copy & Execute Migration:**
-   - Open `supabase/migrations/001_initial_schema.sql`
-   - Copy entire contents
-   - Paste into SQL Editor
-   - Click "Run" button
+3. **Copy & Execute Migrations:**
+   - First, open `supabase/migrations/001_initial_schema.sql`, copy its content, paste into SQL Editor, and click "Run".
+   - Second, open `supabase/migrations/002_user_roles_and_trigger.sql`, copy its content, paste into SQL Editor, and click "Run" to apply the Roles and Authentication Trigger setup.
 
 4. **Verify Tables Created:**
    - Go to "Table Editor" in left sidebar

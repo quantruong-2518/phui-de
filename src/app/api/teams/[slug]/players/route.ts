@@ -1,120 +1,69 @@
-import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { isTeamAccessError, requireTeamAccess } from '@/lib/auth/team-access';
 
-// GET /api/teams/[slug]/players
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ slug: string }> },
-) {
-  try {
-    const slug = (await params).slug;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+type Params = { params: Promise<{ slug: string }> };
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+const createSchema = z.object({
+  name: z.string().trim().min(2).max(80),
+  code: z.string().trim().min(1).max(10).optional(),
+  position: z.enum(['GK', 'DF', 'MF', 'FW']).nullable().optional(),
+  avatar_url: z.string().url().nullable().optional(),
+});
 
-    // Get team ID from slug
-    const { data: team } = await supabase
-      .from('teams')
-      .select('id')
-      .eq('slug', slug)
-      .single();
+// GET /api/teams/[slug]/players — list squad
+export async function GET(_req: Request, { params }: Params) {
+  const { slug } = await params;
+  const ctx = await requireTeamAccess(slug, { allowPublic: true });
+  if (isTeamAccessError(ctx)) return ctx;
 
-    if (!team) {
-      return NextResponse.json({ error: 'Team not found' }, { status: 404 });
-    }
+  const { data, error } = await ctx.supabase
+    .from('players')
+    .select('id, name, code, position, avatar_url, matches_played, goals, assists, clean_sheets, total_points, created_at')
+    .eq('team_id', ctx.team.id)
+    .order('total_points', { ascending: false });
 
-    // Fetch players
-    const { data: players, error } = await supabase
-      .from('players')
-      .select('*')
-      .eq('team_id', team.id)
-      .order('position', { ascending: true }); // Logical sort order ideally
-
-    if (error) throw error;
-
-    return NextResponse.json({ data: players });
-  } catch (error) {
-    console.error('Players API Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch players' },
-      { status: 500 },
-    );
+  if (error) {
+    return NextResponse.json({ error: 'Failed to fetch players' }, { status: 500 });
   }
+  return NextResponse.json({ data });
 }
 
-// POST /api/teams/[slug]/players
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ slug: string }> },
-) {
-  try {
-    const slug = (await params).slug;
-    const body = await request.json();
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+// POST /api/teams/[slug]/players — add player. Admin/owner only.
+export async function POST(request: Request, { params }: Params) {
+  const { slug } = await params;
+  const ctx = await requireTeamAccess(slug, { minRole: 'admin' });
+  if (isTeamAccessError(ctx)) return ctx;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const parsed = createSchema.safeParse(await request.json());
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'Invalid input', details: parsed.error.flatten() },
+      { status: 400 },
+    );
+  }
 
-    // Get team ID
-    const { data: team } = await supabase
-      .from('teams')
-      .select('id')
-      .eq('slug', slug)
-      .single();
+  const { data: player, error } = await ctx.supabase
+    .from('players')
+    .insert({
+      team_id: ctx.team.id,
+      name: parsed.data.name,
+      code: parsed.data.code ?? null,
+      position: parsed.data.position ?? null,
+      avatar_url: parsed.data.avatar_url ?? null,
+    })
+    .select()
+    .single();
 
-    if (!team) {
-      return NextResponse.json({ error: 'Team not found' }, { status: 404 });
-    }
-
-    // Check code uniqueness within team
-    const { data: existing } = await supabase
-      .from('players')
-      .select('id')
-      .eq('team_id', team.id)
-      .eq('code', body.code)
-      .single();
-
-    if (existing) {
+  if (error) {
+    if (error.code === '23505') {
       return NextResponse.json(
-        { error: 'Mã cầu thủ/Số áo đã tồn tại' },
+        { error: 'Số áo đã tồn tại trong đội' },
         { status: 409 },
       );
     }
-
-    // Insert Player
-    const { data: player, error } = await supabase
-      .from('players')
-      .insert({
-        team_id: team.id,
-        name: body.name,
-        code: body.code,
-        position: body.position,
-        // Default stats
-        matches_played: 0,
-        goals: 0,
-        assists: 0,
-        clean_sheets: 0,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return NextResponse.json({ data: player });
-  } catch (error) {
-    console.error('Create Player Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create player' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Failed to create player' }, { status: 500 });
   }
+
+  return NextResponse.json({ data: player }, { status: 201 });
 }

@@ -1,62 +1,81 @@
-import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { isTeamAccessError, requireTeamAccess } from '@/lib/auth/team-access';
 
-// GET /api/teams/[slug]/dashboard
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ slug: string }> },
-) {
-  try {
-    const slug = (await params).slug;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+type Params = { params: Promise<{ slug: string }> };
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+export async function GET(_req: Request, { params }: Params) {
+  const { slug } = await params;
+  const ctx = await requireTeamAccess(slug);
+  if (isTeamAccessError(ctx)) return ctx;
 
-    // Get team info
-    const { data: team, error: teamError } = await supabase
-      .from('teams')
-      .select('*')
-      .eq('slug', slug)
-      .single();
+  const { supabase, team } = ctx;
 
-    if (teamError || !team) {
-      return NextResponse.json({ error: 'Team not found' }, { status: 404 });
-    }
+  // Active season
+  const { data: activeSeason } = await supabase
+    .from('seasons')
+    .select('id, year, name')
+    .eq('is_active', true)
+    .maybeSingle();
 
-    // Check membership
-    const { data: member, error: memberError } = await supabase
-      .from('team_members')
-      .select('role')
+  // Run independent reads in parallel
+  const seasonId = activeSeason?.id ?? null;
+  const [
+    { count: totalPlayers },
+    teamSeasonRes,
+    recentMatchesRes,
+    topScorersRes,
+  ] = await Promise.all([
+    supabase
+      .from('players')
+      .select('id', { count: 'exact', head: true })
+      .eq('team_id', team.id),
+    seasonId
+      ? supabase
+          .from('team_seasons')
+          .select('matches_played, wins, draws, losses, goals_scored, goals_conceded, total_points')
+          .eq('team_id', team.id)
+          .eq('season_id', seasonId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    supabase
+      .from('matches')
+      .select('id, opponent, match_date, result, goals_scored, goals_conceded, status')
       .eq('team_id', team.id)
-      .eq('user_id', user.id)
-      .single();
+      .order('match_date', { ascending: false })
+      .limit(5),
+    supabase
+      .from('players')
+      .select('id, name, code, position, goals, assists, total_points')
+      .eq('team_id', team.id)
+      .order('total_points', { ascending: false })
+      .limit(5),
+  ]);
 
-    if (memberError || !member) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+  const seasonStats = teamSeasonRes?.data ?? null;
+  const recentMatches = recentMatchesRes.data ?? [];
+  const topScorers = topScorersRes.data ?? [];
 
-    // Mock stats for now (Real implementation would count tables)
-    const stats = {
+  const matchesPlayed = seasonStats?.matches_played ?? 0;
+  const wins = seasonStats?.wins ?? 0;
+  const winRate = matchesPlayed > 0 ? Math.round((wins / matchesPlayed) * 100) : 0;
+
+  return NextResponse.json({
+    data: {
       team,
-      totalPlayers: 0,
-      totalMatches: 0,
-      winRate: 0,
-      goalsScored: 0,
-      recentMatches: [],
-      topScorers: [],
-    };
-
-    return NextResponse.json({ data: stats });
-  } catch (error) {
-    console.error('Dashboard API Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch dashboard' },
-      { status: 500 },
-    );
-  }
+      season: activeSeason,
+      stats: {
+        totalPlayers: totalPlayers ?? 0,
+        totalMatches: matchesPlayed,
+        wins,
+        draws: seasonStats?.draws ?? 0,
+        losses: seasonStats?.losses ?? 0,
+        goalsScored: seasonStats?.goals_scored ?? 0,
+        goalsConceded: seasonStats?.goals_conceded ?? 0,
+        winRate,
+        totalPoints: seasonStats?.total_points ?? 0,
+      },
+      recentMatches,
+      topScorers,
+    },
+  });
 }

@@ -1,62 +1,67 @@
-type FetchOptions = RequestInit & {
-  params?: Record<string, string>;
-};
+import axios, { AxiosRequestConfig } from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
+// Nếu NEXT_PUBLIC_API_URL không có thì mặc định dùng rỗng để browser tự resolve path relative
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
-async function fetchApi<T>(
-  endpoint: string,
-  options: FetchOptions = {},
-): Promise<T> {
-  const { params, headers, ...rest } = options;
+// Khởi tạo instance axios
+const axiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 10000,
+  withCredentials: true, // Required to send Supabase auth cookies
+});
 
-  const url = new URL(`${API_BASE_URL}${endpoint}`);
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      url.searchParams.append(key, value);
-    });
+// Interceptor cho Request
+axiosInstance.interceptors.request.use(
+  (config) => {
+    // TODO: Thêm token (nếu có) vào header ở đây
+    // const token = localStorage.getItem('token');
+    // if (token) {
+    //   config.headers.Authorization = `Bearer ${token}`;
+    // }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
+);
 
-  const response = await fetch(url.toString(), {
-    headers: {
-      'Content-Type': 'application/json',
-      ...headers,
-    },
-    ...rest,
-  });
+// Interceptor cho Response
+axiosInstance.interceptors.response.use(
+  (response) => {
+    // Tuỳ vào backend trả data thẳng list hay trả về { data: ... }
+    // Ở đây ta cứ trả nguyên data của response để code gọi sử dụng
+    return response.data;
+  },
+  (error) => {
+    // Log lỗi tập trung
+    console.error('API Error:', error?.response?.data || error.message);
 
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    // Xử lý token hết hạn (401)
+    if (error.response?.status === 401) {
+      // dispatch logout event, hoặc redirect to login
+    }
+
+    return Promise.reject(error);
   }
+);
 
-  return response.json() as Promise<T>;
-}
-
+// Wrapper API để tương thích ngược với code cũ
 export const api = {
-  get: <T>(endpoint: string, options?: FetchOptions) =>
-    fetchApi<T>(endpoint, { ...options, method: 'GET' }),
+  get: <T>(endpoint: string, config?: AxiosRequestConfig): Promise<T> =>
+    axiosInstance.get<T, T>(endpoint, config),
 
-  post: <T>(endpoint: string, body: unknown, options?: FetchOptions) =>
-    fetchApi<T>(endpoint, {
-      ...options,
-      method: 'POST',
-      body: JSON.stringify(body),
-    }),
+  post: <T>(endpoint: string, body?: unknown, config?: AxiosRequestConfig): Promise<T> =>
+    axiosInstance.post<T, T>(endpoint, body, config),
 
-  put: <T>(endpoint: string, body: unknown, options?: FetchOptions) =>
-    fetchApi<T>(endpoint, {
-      ...options,
-      method: 'PUT',
-      body: JSON.stringify(body),
-    }),
+  put: <T>(endpoint: string, body?: unknown, config?: AxiosRequestConfig): Promise<T> =>
+    axiosInstance.put<T, T>(endpoint, body, config),
 
-  patch: <T>(endpoint: string, body: unknown, options?: FetchOptions) =>
-    fetchApi<T>(endpoint, {
-      ...options,
-      method: 'PATCH',
-      body: JSON.stringify(body),
-    }),
+  patch: <T>(endpoint: string, body?: unknown, config?: AxiosRequestConfig): Promise<T> =>
+    axiosInstance.patch<T, T>(endpoint, body, config),
 
-  delete: <T>(endpoint: string, options?: FetchOptions) =>
-    fetchApi<T>(endpoint, { ...options, method: 'DELETE' }),
+  delete: <T>(endpoint: string, config?: AxiosRequestConfig): Promise<T> =>
+    axiosInstance.delete<T, T>(endpoint, config),
 };

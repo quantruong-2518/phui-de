@@ -48,7 +48,7 @@ export function useOnboarding() {
     queryFn: async () => {
       try {
         const response = await api.get<{ data: UserOnboardingData | null }>(
-          '/onboarding',
+          '/api/onboarding',
         );
         return response.data;
       } catch (error) {
@@ -69,7 +69,7 @@ export function useOnboarding() {
     mutationFn: async (
       onboardingData: Omit<UserOnboardingData, 'createdAt' | 'approval'>,
     ) => {
-      return api.post('/onboarding', onboardingData);
+      return api.post('/api/onboarding', onboardingData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['onboarding'] });

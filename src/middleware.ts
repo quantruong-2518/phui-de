@@ -1,11 +1,20 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+const PUBLIC_PATHS = ['/', '/login', '/register', '/auth/callback'];
+const AUTH_PATHS = ['/login', '/register'];
+
+function isPublic(pathname: string) {
+  if (PUBLIC_PATHS.includes(pathname)) return true;
+  if (pathname.startsWith('/auth/')) return true;
+  if (pathname.startsWith('/_next/')) return true;
+  if (pathname.startsWith('/api/')) return true;
+  return false;
+}
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: request.headers },
   });
 
   const supabase = createServerClient(
@@ -17,73 +26,45 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value;
         },
         set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          });
+          request.cookies.set({ name, value, ...options });
+          response = NextResponse.next({ request: { headers: request.headers } });
+          response.cookies.set({ name, value, ...options });
         },
         remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          });
+          request.cookies.set({ name, value: '', ...options });
+          response = NextResponse.next({ request: { headers: request.headers } });
+          response.cookies.set({ name, value: '', ...options });
         },
       },
     },
   );
 
-  await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { pathname } = request.nextUrl;
 
-  // Bypass Auth for Development as requested
-  /*
-  if (isProtectedRoute && !user) {
-    const redirectUrl = request.nextUrl.clone()
-    redirectUrl.pathname = '/login'
-    redirectUrl.searchParams.set('next', request.nextUrl.pathname)
-    return NextResponse.redirect(redirectUrl)
+  // Authenticated user landing on auth pages → bounce to /teams
+  if (user && AUTH_PATHS.includes(pathname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/teams';
+    url.search = '';
+    return NextResponse.redirect(url);
   }
 
-  if (isAuthRoute && user) {
-    const redirectUrl = request.nextUrl.clone()
-    redirectUrl.pathname = '/teams'
-    return NextResponse.redirect(redirectUrl)
+  // Unauthenticated user accessing a protected page → /login
+  if (!user && !isPublic(pathname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    url.searchParams.set('next', pathname);
+    return NextResponse.redirect(url);
   }
-  */
 
   return response;
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - /api/ (API routes - handled separately or let through)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|api/).*)',
+    // Match all paths except static assets. /api/* MUST be matched so Supabase
+    // can refresh the session cookie before route handlers call auth.getUser().
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 };

@@ -1,29 +1,17 @@
-'use client';
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 
-import { useOnboarding } from '@/hooks/use-onboarding';
-import { OnboardingModal } from '@/components/onboarding/OnboardingModal';
-import { BottomNav } from '@/components/navigation/BottomNav';
-import { Sidebar } from '@/components/navigation/Sidebar';
-import { TeamDetailTab } from '@/components/home/TeamDetailTab';
+export default async function Home() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-export default function Home() {
-  const { isOnboarded, data } = useOnboarding();
+  if (!user) redirect('/login');
 
-  if (!isOnboarded) {
-    return <OnboardingModal />;
-  }
+  const { data: profile } = await supabase
+    .from('users')
+    .select('onboarding_completed')
+    .eq('id', user.id)
+    .maybeSingle();
 
-  return (
-    <div className="bg-background flex min-h-screen">
-      <Sidebar />
-
-      <main className="flex-1 pb-16 md:pb-0">
-        <div className="mx-auto max-w-3xl space-y-4 p-4 md:p-6">
-          <TeamDetailTab memberName={data?.name} role={data?.role} />
-        </div>
-      </main>
-
-      <BottomNav />
-    </div>
-  );
+  redirect(profile?.onboarding_completed ? '/teams' : '/onboarding');
 }
