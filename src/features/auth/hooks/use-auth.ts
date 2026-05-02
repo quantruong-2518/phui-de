@@ -53,12 +53,13 @@ export function useAuth() {
     setIsLoading(true);
     try {
       const phone = normalizePhone(data.phone);
+      const fullName = data.name.trim();
       const { error } = await supabase.auth.signUp({
         email: phoneToAuthToken(data.phone),
         password: data.password,
         options: {
           emailRedirectTo: `${location.origin}/auth/callback`,
-          data: { phone },
+          data: { phone, full_name: fullName },
         },
       });
       if (error) throw error;

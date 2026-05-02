@@ -26,6 +26,7 @@ export function RegisterForm() {
   const form = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
+      name: '',
       phone: '',
       password: '',
       confirmPassword: '',
@@ -36,6 +37,24 @@ export function RegisterForm() {
     <div className="space-y-6">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(register)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Họ tên</FormLabel>
+                <FormControl>
+                  <Input
+                    type="text"
+                    placeholder="Nguyễn Văn A"
+                    autoComplete="name"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <FormField
             control={form.control}
             name="phone"
