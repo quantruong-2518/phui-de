@@ -135,6 +135,25 @@ UPSERT bởi trigger `bump_team_season_stats` khi match vào `finished`.
 | event_type | TEXT NOT NULL | CHECK `'goal','assist','clean_sheet','own_goal'` |
 | minute | INTEGER | CHECK `0 <= minute <= 200 OR NULL` |
 
+### fields `migration 011`
+
+Catalog sân bóng cộng đồng. User-contributed (ai đăng nhập cũng tạo được). Public read.
+
+| Cột | Kiểu | Note |
+|-----|------|------|
+| id | UUID PK | |
+| name | TEXT NOT NULL | |
+| address | TEXT | |
+| google_maps_url | TEXT | link cop từ Google Maps app |
+| contact_phone | TEXT | số gọi/Zalo |
+| pitch_count | INTEGER NOT NULL default 1 | CHECK `1 ≤ pitch_count ≤ 50` |
+| has_camera | BOOLEAN NOT NULL default `false` | |
+| notes | TEXT | meta khác (giá, kích thước, ghi chú) |
+| created_by | UUID | FK users ON DELETE SET NULL |
+| created_at, updated_at | TIMESTAMPTZ | |
+
+RLS: read public; insert chỉ user đã login (`created_by = auth.uid()`); update/delete chỉ creator hoặc `users.role = 'ADMIN'`.
+
 ## Indexes
 
 | Index | Bảng | Cột | Mục đích |
@@ -152,6 +171,8 @@ UPSERT bởi trigger `bump_team_season_stats` khi match vào `finished`.
 | idx_matches_team_date | matches | team_id, match_date DESC | recent matches |
 | idx_matches_season | matches | season_id | season filter |
 | idx_match_events_match | match_events | match_id | match detail nested |
+| idx_fields_name | fields | name | search theo tên |
+| idx_fields_created_by | fields | created_by | "sân của tôi" |
 | idx_match_events_player | match_events | player_id | player history |
 
 ## See also
