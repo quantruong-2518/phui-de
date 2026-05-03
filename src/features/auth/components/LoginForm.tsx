@@ -90,6 +90,15 @@ export function LoginForm() {
           Đăng ký ngay
         </Link>
       </div>
+
+      <div className="text-center">
+        <Link
+          href="/admin/login"
+          className="text-muted-foreground hover:text-foreground text-xs underline-offset-4 hover:underline"
+        >
+          Đăng nhập admin
+        </Link>
+      </div>
     </div>
   );
 }
