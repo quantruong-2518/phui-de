@@ -33,7 +33,7 @@ export function PlayerLeaderboard() {
         );
 
         if (rank === 1) {
-          rowClass = 'bg-primary/5 border border-primary/10';
+          rowClass = 'bg-primary/10';
           rankContent = <Crown className="text-accent h-4 w-4" />;
         } else if (rank === 2) {
           rowClass = 'bg-secondary';

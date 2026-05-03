@@ -34,7 +34,7 @@ function MatchRow({ slug, match }: { slug: string; match: Match }) {
   return (
     <Link
       href={`/teams/${slug}/matches/${match.id}`}
-      className="bg-card hover:bg-muted/30 flex items-center gap-3 rounded-xl border p-3 transition-colors"
+      className="bg-muted/40 hover:bg-muted/60 flex items-center gap-3 rounded-xl p-3 shadow-sm transition-colors"
     >
       <div
         className={`flex h-10 w-10 items-center justify-center rounded-lg text-sm font-black uppercase ${resultClass}`}
@@ -122,7 +122,7 @@ export default function TeamMatchesPage() {
       )}
 
       {!isLoading && matches?.length === 0 && (
-        <div className="bg-muted/30 flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-center">
+        <div className="bg-muted/30 flex flex-col items-center justify-center rounded-xl py-16 text-center">
           <CalendarPlus className="text-muted-foreground mb-3 h-10 w-10" />
           <p className="text-muted-foreground text-sm">
             Chưa có trận nào. Tạo lịch đầu tiên.

@@ -203,7 +203,7 @@
 @layer components {
   /* Featured cards — uses primary green gradient */
   .card-featured {
-    @apply bg-card text-card-foreground relative overflow-hidden rounded-xl border shadow-sm;
+    @apply bg-card text-card-foreground relative overflow-hidden rounded-xl shadow-sm;
     background: linear-gradient(
       135deg,
       oklch(from var(--primary) l c h / 0.08) 0%,

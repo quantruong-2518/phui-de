@@ -64,7 +64,7 @@ export default function TeamSquadPage() {
       )}
 
       {!isLoading && (!players || players.length === 0) && (
-        <div className="bg-muted/30 text-muted-foreground rounded-xl border border-dashed py-16 text-center text-sm">
+        <div className="bg-muted/30 text-muted-foreground rounded-xl py-16 text-center text-sm">
           Chưa có thành viên hoạt động. Khi thành viên xin tham gia và được duyệt,
           họ sẽ xuất hiện ở đây.
         </div>
@@ -75,7 +75,7 @@ export default function TeamSquadPage() {
           {players.map((p, idx) => (
             <div
               key={p.id}
-              className="bg-card hover:bg-muted/30 flex items-center gap-3 rounded-xl border p-3 transition-colors"
+              className="bg-muted/40 hover:bg-muted/60 flex items-center gap-3 rounded-xl p-3 shadow-sm transition-colors"
             >
               <span className="text-muted-foreground w-6 text-center text-xs font-bold">
                 {idx + 1}

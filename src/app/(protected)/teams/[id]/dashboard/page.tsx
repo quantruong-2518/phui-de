@@ -1,17 +1,17 @@
-import {
-  Trophy,
-  Target,
-  TrendingUp,
-  Flame,
-  BarChart3,
-  Calendar,
-  Settings,
-} from 'lucide-react';
+import { Trophy, Target, TrendingUp, BarChart3, Crown } from 'lucide-react';
 import { UpcomingMatches } from '@/components/match/UpcomingMatches';
 import { LiveMatchScoring } from '@/components/match/LiveMatchScoring';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
+
+type TopPlayer = {
+  id: string;
+  name: string;
+  goals: number;
+  assists: number;
+  total_points: number;
+};
 
 export default async function TeamDashboardPage({
   params,
@@ -21,7 +21,6 @@ export default async function TeamDashboardPage({
   const { id: slug } = await params;
   const supabase = await createClient();
 
-  // 1. Fetch Team info
   const { data: team, error: teamError } = await supabase
     .from('teams')
     .select('*')
@@ -32,7 +31,6 @@ export default async function TeamDashboardPage({
     notFound();
   }
 
-  // 2. Fetch Active Season Stats
   const { data: activeSeason } = await supabase
     .from('seasons')
     .select('id')
@@ -45,7 +43,6 @@ export default async function TeamDashboardPage({
     goalsScored: 0,
     totalMatches: 0,
     winRate: 0,
-    recentForm: ['-', '-', '-', '-', '-'],
   };
 
   if (activeSeason) {
@@ -65,130 +62,158 @@ export default async function TeamDashboardPage({
         goalsScored: teamSeason.goals_scored || 0,
         totalMatches,
         winRate: totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0,
-        recentForm: ['-', '-', '-', '-', '-'], // Placeholder for actual match history
       };
     }
   }
 
-  // 3. Fetch Top Players (Mock for now since we don't have match_events yet)
-  const topPlayers: any[] = [];
+  // TODO: replace mock with real top scorers when match_events ready.
+  const topPlayers: TopPlayer[] = [];
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">{team.name}</h1>
-        <p className="text-muted-foreground text-sm">Mã đội: {team.code}</p>
-      </div>
+      {/* 1. Stats — gọn, đẹp, đặt đầu */}
+      <section className="card-featured grid grid-cols-4 gap-2 p-3 sm:gap-3 sm:p-4">
+        <StatCell
+          icon={<Trophy className="h-4 w-4" />}
+          value={stats.wins}
+          label="Thắng"
+          tone="primary"
+        />
+        <StatCell
+          icon={<Target className="h-4 w-4" />}
+          value={stats.losses}
+          label="Thua"
+          tone="destructive"
+        />
+        <StatCell
+          icon={<BarChart3 className="h-4 w-4" />}
+          value={stats.goalsScored}
+          label="Bàn"
+          tone="muted"
+        />
+        <StatCell
+          icon={<TrendingUp className="h-4 w-4" />}
+          value={`${stats.winRate}%`}
+          label="Tỉ lệ"
+          tone="gradient"
+        />
+      </section>
 
-      {/* 1. Live Match (Highest Priority) - Client Component */}
+      {/* 2. Live Match (chỉ hiện khi có) */}
       <div className="animate-in zoom-in-95 duration-500">
         <LiveMatchScoring />
       </div>
 
-      {/* 2. Upcoming / Booking */}
+      {/* 3. Lịch thi đấu */}
       <UpcomingMatches />
 
-      {/* 3. Stats Summary */}
-      <div className="card-featured grid grid-cols-2 gap-3 p-4 sm:grid-cols-4">
-        <div className="text-center">
-          <Trophy className="text-primary mx-auto mb-1 h-5 w-5" />
-          <div className="text-primary text-2xl font-black">{stats.wins}</div>
-          <div className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-            Thắng
-          </div>
-        </div>
-        <div className="text-center">
-          <Target className="text-destructive mx-auto mb-1 h-5 w-5" />
-          <div className="text-destructive text-2xl font-black">
-            {stats.losses}
-          </div>
-          <div className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-            Thua
-          </div>
-        </div>
-        <div className="text-center">
-          <BarChart3 className="text-muted-foreground mx-auto mb-1 h-5 w-5" />
-          <div className="text-2xl font-black">{stats.goalsScored}</div>
-          <div className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-            Bàn thắng
-          </div>
-        </div>
-        <div className="text-center">
-          <TrendingUp className="text-accent mx-auto mb-1 h-5 w-5" />
-          <div className="text-gradient-primary text-2xl font-black">
-            {stats.winRate}%
-          </div>
-          <div className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-            Tỉ lệ thắng
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* 4. Recent Form */}
-        <div className="bg-card rounded-xl border p-5 shadow-sm">
-          <div className="mb-4 flex items-center gap-2">
-            <Flame className="text-accent h-5 w-5" />
-            <h3 className="font-bold">Phong độ gần đây</h3>
-            <span className="text-muted-foreground ml-auto text-xs font-medium">
-              {stats.totalMatches} trận
-            </span>
-          </div>
-          <div className="flex gap-1.5 opacity-50">
-            <span className="text-muted-foreground text-xs italic">
-              Chưa có dữ liệu thi đấu
-            </span>
-          </div>
-        </div>
-
-        {/* 5. Top Players Preview */}
-        <div className="bg-card rounded-xl border p-5 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
+      {/* 4. Top 5 cầu thủ xuất sắc */}
+      <section className="bg-card rounded-xl p-4 shadow-sm sm:p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Crown className="h-4 w-4 text-amber-500" />
             <h3 className="font-bold">Cầu thủ xuất sắc</h3>
-            <Link
-              href={`/teams/${slug}/squad`}
-              className="text-primary hover:text-primary/80 text-xs font-bold transition-colors"
-            >
-              Xem tất cả
-            </Link>
           </div>
-          <div className="space-y-2">
-            {topPlayers.length === 0 ? (
-              <div className="text-muted-foreground text-xs italic opacity-50">
-                Chưa có số liệu
-              </div>
-            ) : (
-              topPlayers.slice(0, 3).map((p, i) => (
-                <div
-                  key={p.id}
-                  className="bg-muted/30 hover:bg-muted/50 flex items-center gap-3 rounded-lg px-3 py-2 transition-colors"
-                >
-                  {/* Player row template */}
-                </div>
-              ))
-            )}
-          </div>
+          <Link
+            href={`/teams/${slug}/members`}
+            className="text-primary hover:text-primary/80 text-xs font-bold transition-colors"
+          >
+            Xem tất cả
+          </Link>
         </div>
-      </div>
-
-      {/* Quick Actions (Admin only - simplification) */}
-      <div className="grid grid-cols-2 gap-4">
-        <button className="bg-muted/30 hover:bg-muted/50 flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-6 transition-colors">
-          <Calendar className="text-muted-foreground h-6 w-6" />
-          <span className="text-muted-foreground text-xs font-medium">
-            Đặt sân mới
-          </span>
-        </button>
-        <Link
-          href={`/teams/${slug}/settings`}
-          className="bg-muted/30 hover:bg-muted/50 flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-6 transition-colors"
-        >
-          <Settings className="text-muted-foreground h-6 w-6" />
-          <span className="text-muted-foreground text-xs font-medium">
-            Quản lý đội
-          </span>
-        </Link>
-      </div>
+        {topPlayers.length === 0 ? (
+          <p className="text-muted-foreground py-4 text-center text-xs italic opacity-70">
+            Chưa có số liệu
+          </p>
+        ) : (
+          <ol className="space-y-1.5">
+            {topPlayers.slice(0, 5).map((p, i) => (
+              <TopPlayerRow key={p.id} rank={i + 1} player={p} />
+            ))}
+          </ol>
+        )}
+      </section>
     </div>
+  );
+}
+
+function StatCell({
+  icon,
+  value,
+  label,
+  tone,
+}: {
+  icon: React.ReactNode;
+  value: string | number;
+  label: string;
+  tone: 'primary' | 'destructive' | 'muted' | 'gradient';
+}) {
+  const valueClass = {
+    primary: 'text-primary',
+    destructive: 'text-destructive',
+    muted: 'text-foreground',
+    gradient: 'text-gradient-primary',
+  }[tone];
+
+  const iconClass = {
+    primary: 'text-primary',
+    destructive: 'text-destructive',
+    muted: 'text-muted-foreground',
+    gradient: 'text-accent',
+  }[tone];
+
+  return (
+    <div className="flex flex-col items-center justify-center text-center">
+      <span className={`mb-0.5 ${iconClass}`}>{icon}</span>
+      <span className={`text-xl font-black sm:text-2xl ${valueClass}`}>
+        {value}
+      </span>
+      <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function TopPlayerRow({ rank, player }: { rank: number; player: TopPlayer }) {
+  // 1 = vàng to nhất, 2 = xanh nhỏ hơn, 3-5 = xám
+  const styles =
+    rank === 1
+      ? {
+          row: 'bg-amber-500/10',
+          rank: 'bg-amber-500 text-white text-2xl h-11 w-11',
+          name: 'text-base font-black',
+        }
+      : rank === 2
+        ? {
+            row: 'bg-sky-500/10',
+            rank: 'bg-sky-500 text-white text-lg h-9 w-9',
+            name: 'text-sm font-bold',
+          }
+        : {
+            row: 'bg-muted/40',
+            rank: 'bg-muted text-muted-foreground text-sm h-7 w-7',
+            name: 'text-sm font-semibold',
+          };
+
+  return (
+    <li
+      className={`flex items-center gap-3 rounded-lg px-3 py-2 ${styles.row}`}
+    >
+      <span
+        className={`flex shrink-0 items-center justify-center rounded-full font-black ${styles.rank}`}
+      >
+        {rank}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className={`truncate ${styles.name}`}>{player.name}</p>
+        <p className="text-muted-foreground text-[11px]">
+          ⚽ {player.goals} · 🅰 {player.assists} ·{' '}
+          <span className="text-foreground font-bold">
+            {player.total_points} điểm
+          </span>
+        </p>
+      </div>
+    </li>
   );
 }

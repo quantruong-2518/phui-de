@@ -11,7 +11,7 @@ interface TeamCardProps {
 export function TeamCard({ team, action }: TeamCardProps) {
   const accent = team.primary_color || '#22c55e';
   return (
-    <Card className="group relative h-full overflow-hidden border shadow-none transition-shadow duration-200 hover:shadow-md">
+    <Card className="group relative h-full overflow-hidden border-0 shadow-sm transition-shadow duration-200 hover:shadow-md">
       <span
         aria-hidden
         className="absolute top-0 left-0 h-full w-1"

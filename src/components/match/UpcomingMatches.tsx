@@ -42,7 +42,7 @@ export function UpcomingMatches() {
           return (
             <div
               key={match.id}
-              className="group border-border bg-card hover:border-primary/50 relative overflow-hidden rounded-xl border p-4 shadow-sm transition-all"
+              className="group bg-card relative overflow-hidden rounded-xl p-4 shadow-sm transition-all hover:shadow-md"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1 space-y-1">
@@ -79,7 +79,7 @@ export function UpcomingMatches() {
                   User said "vào ngày đó có thể bấm start". Let's show if isToday for stricter UX, 
                   or just enabled if today. Let's make it always visible but highlighted if today. */}
 
-              <div className="border-border mt-4 flex gap-2 border-t pt-3">
+              <div className="mt-4 flex gap-2 pt-3">
                 {isToday ? (
                   <Button
                     className="shadow-primary/20 flex-1 gap-1.5 shadow-lg"

@@ -117,7 +117,7 @@ export default function TeamsPage() {
             )}
           </>
         ) : (
-          <div className="bg-muted/30 text-muted-foreground rounded-2xl border border-dashed py-12 text-center text-sm">
+          <div className="bg-muted/30 text-muted-foreground rounded-2xl py-12 text-center text-sm">
             {search
               ? 'Không tìm thấy đội nào khớp với từ khoá.'
               : 'Chưa có đội nào được duyệt.'}
@@ -145,7 +145,7 @@ function TeamGrid({ teams }: { teams: (Team & { member_count: number })[] }) {
           <div className="relative h-full">
             <TeamCard team={team} />
             {isPending && (
-              <span className="bg-background/90 text-muted-foreground absolute top-2 right-2 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium shadow-sm sm:text-xs">
+              <span className="bg-background/90 text-muted-foreground absolute top-2 right-2 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium shadow-sm sm:text-xs">
                 <Clock className="h-3 w-3" />
                 Chờ duyệt
               </span>

@@ -97,8 +97,10 @@ Options:
 
 - `src/app/(protected)/teams/page.tsx` — render 2 section: "Đội của tôi" (`scope=mine`) + "Khám phá đội khác" (`scope=all` minus mine)
 - `src/app/(protected)/teams/create/page.tsx` + `client.tsx` — form tạo đội (gọi RPC qua `/api/teams` POST)
-- `src/app/(protected)/teams/[id]/layout.tsx` — server component fetch team, header + nav tab
-- `src/app/(protected)/teams/[id]/dashboard/page.tsx` — server component fetch dashboard
+- `src/app/(protected)/teams/[id]/layout.tsx` — server component fetch team, render header card + `<TeamNav>`
+- `src/app/(protected)/teams/[id]/team-nav.tsx` — responsive nav: desktop (`md+`) inline tab bar, mobile fixed bottom bar (icon-only) với `Đặt sân` là raised pill ở giữa. Items: `Tổng quan`, `Trận đấu`, `Đặt sân` (link `/bookings`), `Thành viên`, `Quản lý` (= settings). Tab `Cầu thủ` đã gộp vào `Thành viên`.
+- `src/app/(protected)/teams/[id]/dashboard/page.tsx` — server component, thứ tự render: stats compact (`card-featured`, 4 ô) → `<LiveMatchScoring>` → `<UpcomingMatches>` → top 5 cầu thủ (rank 1 vàng to, rank 2 xanh, rank 3-5 xám)
+- `src/app/(protected)/teams/[id]/squad/page.tsx` — vẫn còn route nhưng không có tab nav, dùng cho edit jersey/position
 - `src/features/teams/components/TeamCard.tsx`
 - `src/features/teams/hooks/use-teams.ts` — `useTeams({ scope, search })`
 - `src/features/teams/hooks/use-team.ts` — `useTeam(slug)`, `useTeamDashboard(slug)`, `useUpdateTeam(slug)`

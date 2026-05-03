@@ -100,7 +100,7 @@ export default function MatchDetailPage() {
         Trận đấu
       </Link>
 
-      <div className="bg-card space-y-4 rounded-xl border p-5 shadow-sm">
+      <div className="bg-card space-y-4 rounded-xl p-5 shadow-sm">
         <div className="flex items-start justify-between">
           <div>
             <h2 className="text-xl font-bold">vs {match.opponent}</h2>
@@ -155,7 +155,7 @@ export default function MatchDetailPage() {
       </div>
 
       {/* Event recorder */}
-      <div className="bg-card space-y-3 rounded-xl border p-5 shadow-sm">
+      <div className="bg-card space-y-3 rounded-xl p-5 shadow-sm">
         <h3 className="font-bold">Ghi sự kiện</h3>
         <div className="grid gap-2 sm:grid-cols-[1fr_120px_80px_auto]">
           <Select value={pickedPlayer} onValueChange={setPickedPlayer}>

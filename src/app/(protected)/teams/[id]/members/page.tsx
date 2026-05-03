@@ -68,7 +68,7 @@ export default function TeamMembersPage() {
             <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
           </div>
         ) : approvedActive.length === 0 ? (
-          <div className="bg-muted/30 text-muted-foreground rounded-xl border border-dashed py-10 text-center text-sm">
+          <div className="bg-muted/30 text-muted-foreground rounded-xl py-10 text-center text-sm">
             Chưa có thành viên đang hoạt động.
           </div>
         ) : (
@@ -200,7 +200,7 @@ function MemberRow({
 
   return (
     <div
-      className={`bg-card flex items-center gap-3 rounded-xl border p-3 ${
+      className={`bg-muted/40 flex items-center gap-3 rounded-xl p-3 shadow-sm ${
         muted ? 'opacity-70' : ''
       }`}
     >
@@ -294,7 +294,7 @@ function PendingRow({ slug, member }: { slug: string; member: TeamMember }) {
   const busy = update.isPending;
 
   return (
-    <div className="bg-card flex items-center gap-3 rounded-xl border p-3">
+    <div className="bg-muted/40 flex items-center gap-3 rounded-xl p-3 shadow-sm">
       <Avatar className="h-10 w-10">
         <AvatarFallback>{initial}</AvatarFallback>
       </Avatar>

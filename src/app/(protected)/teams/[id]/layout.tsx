@@ -35,7 +35,7 @@ export default async function TeamLayout({
         <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
             <div
-              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br shadow-lg ring-1 ring-white/10"
+              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br shadow-lg"
               style={{
                 backgroundImage: `linear-gradient(135deg, ${team.primary_color || '#22c55e'}, ${team.primary_color || '#22c55e'}cc)`,
               }}

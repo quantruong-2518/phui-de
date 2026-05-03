@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 export default function PlayersPage() {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
-      <div className="bg-card flex flex-col items-center rounded-2xl border p-12 text-center shadow-sm">
+      <div className="bg-card flex flex-col items-center rounded-2xl p-12 text-center shadow-sm">
         <div className="bg-muted/40 mb-4 flex h-14 w-14 items-center justify-center rounded-full">
           <ShieldHalf className="text-muted-foreground h-7 w-7" />
         </div>

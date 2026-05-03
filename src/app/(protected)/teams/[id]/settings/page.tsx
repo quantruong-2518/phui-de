@@ -66,7 +66,7 @@ export default function TeamSettingsPage() {
       </div>
 
       {/* General Info */}
-      <div className="bg-card space-y-4 rounded-xl border p-6 shadow-sm">
+      <div className="bg-card space-y-4 rounded-xl p-6 shadow-sm">
         <h3 className="font-bold">Thông tin đội</h3>
         <div className="space-y-3">
           <div className="space-y-1.5">
@@ -113,7 +113,7 @@ export default function TeamSettingsPage() {
 
       {/* Pending requests */}
       {pending.length > 0 && (
-        <div className="bg-card space-y-3 rounded-xl border p-6 shadow-sm">
+        <div className="bg-card space-y-3 rounded-xl p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <h3 className="font-bold">Yêu cầu tham gia</h3>
             <Badge variant="secondary">{pending.length}</Badge>
@@ -168,7 +168,7 @@ export default function TeamSettingsPage() {
       )}
 
       {/* Approved members */}
-      <div className="bg-card space-y-3 rounded-xl border p-6 shadow-sm">
+      <div className="bg-card space-y-3 rounded-xl p-6 shadow-sm">
         <div className="flex items-center justify-between">
           <h3 className="font-bold">Thành viên ({approved.length})</h3>
         </div>

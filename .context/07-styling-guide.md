@@ -54,6 +54,32 @@ text-foreground, text-muted-foreground, text-destructive
 (border - border, border - input);
 ```
 
+### Borderless surfaces (RULE)
+
+Mặc định **KHÔNG dùng `border`** cho card/section/row. Tách khối bằng:
+
+- Nền tương phản: `bg-card` cho khối chính, `bg-muted/30` / `bg-muted/40` / `bg-muted/60` cho khối/row phụ.
+- `shadow-sm` mặc định, `shadow-md` cho khối nổi.
+- Spacing rõ ràng (`gap`, `space-y`).
+
+```typescript
+// ✅ ĐÚNG
+<div className="bg-card rounded-xl p-5 shadow-sm">...</div>
+<div className="bg-muted/40 rounded-xl p-3 shadow-sm">...</div>
+
+// ❌ SAI — thừa border
+<div className="bg-card rounded-xl border p-5 shadow-sm">...</div>
+```
+
+**Ngoại lệ — vẫn được phép dùng border**:
+
+- `<Input>`, `<Select>`, `<Textarea>`, `<Dialog>` — cần ranh giới rõ với content.
+- Bottom bar fixed (`border-t`) — phân tách với content phía trên.
+- Divider trong list dài: dùng `divide-y` thay vì `border-b` per row.
+- Dark scoreboard / overlay: `border-white/10` làm divider nội bộ chấp nhận được.
+
+Empty state KHÔNG dùng `border-dashed` — đổi sang `bg-muted/30` + text muted.
+
 ### Responsive
 
 ```typescript
