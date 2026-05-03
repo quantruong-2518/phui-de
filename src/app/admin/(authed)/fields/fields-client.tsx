@@ -9,8 +9,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import {
   useCreateField,
@@ -18,10 +25,9 @@ import {
   useFields,
   useUpdateField,
 } from '@/features/fields/hooks/use-fields';
-import {
-  fieldSchema,
-} from '@/features/fields/validations/field-schemas';
+import { fieldSchema } from '@/features/fields/validations/field-schemas';
 import type { Field } from '@/features/fields/types/field.types';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Camera,
   ExternalLink,
@@ -34,7 +40,21 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { useForm } from 'react-hook-form';
+import type { z } from 'zod';
+
+type FieldFormInput = z.input<typeof fieldSchema>;
+type FieldFormOutput = z.output<typeof fieldSchema>;
+
+const EMPTY_DEFAULTS: FieldFormInput = {
+  name: '',
+  address: '',
+  google_maps_url: '',
+  contact_phone: '',
+  pitch_count: 1,
+  has_camera: false,
+  notes: '',
+};
 
 export function FieldsClient() {
   const [search, setSearch] = useState('');
@@ -60,7 +80,6 @@ export function FieldsClient() {
 
   return (
     <div className="space-y-4">
-      {/* Toolbar — mobile-first: stack, sm+ horizontal */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -71,13 +90,15 @@ export function FieldsClient() {
             className="pl-9"
           />
         </div>
-        <Button onClick={() => setCreating(true)} className="w-full gap-1.5 sm:w-auto">
+        <Button
+          onClick={() => setCreating(true)}
+          className="w-full gap-1.5 sm:w-auto"
+        >
           <Plus className="h-4 w-4" />
           Thêm sân
         </Button>
       </div>
 
-      {/* Section title + count */}
       <div className="flex items-center gap-2">
         <MapPinned className="text-muted-foreground h-4 w-4" />
         <h2 className="text-sm font-bold tracking-tight">
@@ -143,7 +164,6 @@ function FieldRow({
   return (
     <div className="bg-card flex items-start gap-3 rounded-xl p-3 shadow-sm sm:p-4">
       <div className="min-w-0 flex-1 space-y-1">
-        {/* Tên + badges (always) */}
         <div className="flex flex-wrap items-center gap-1.5">
           <h3 className="truncate text-sm font-semibold sm:text-base">
             {field.name}
@@ -159,14 +179,12 @@ function FieldRow({
           )}
         </div>
 
-        {/* Địa chỉ — quan trọng, hiện cả mobile */}
         {field.address && (
           <p className="text-muted-foreground truncate text-xs">
             {field.address}
           </p>
         )}
 
-        {/* Liên hệ + maps — quan trọng action, hiện cả mobile */}
         <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
           {field.contact_phone && (
             <a
@@ -191,7 +209,6 @@ function FieldRow({
           )}
         </div>
 
-        {/* Notes — phụ, ẩn mobile để giữ row gọn */}
         {field.notes && (
           <p className="text-muted-foreground/80 hidden text-xs italic sm:block">
             {field.notes}
@@ -199,7 +216,6 @@ function FieldRow({
         )}
       </div>
 
-      {/* Actions — icon-only chấp nhận được vì là utility action universal */}
       <div className="flex shrink-0 items-center">
         <Button
           variant="ghost"
@@ -239,157 +255,228 @@ function FieldDialog({
   const create = useCreateField();
   const update = useUpdateField();
 
-  const [name, setName] = useState('');
-  const [address, setAddress] = useState('');
-  const [maps, setMaps] = useState('');
-  const [phone, setPhone] = useState('');
-  const [pitchCount, setPitchCount] = useState(1);
-  const [hasCamera, setHasCamera] = useState(false);
-  const [notes, setNotes] = useState('');
-  const [hydrated, setHydrated] = useState<string | null>(null);
+  const form = useForm<FieldFormInput>({
+    resolver: zodResolver(fieldSchema),
+    defaultValues: EMPTY_DEFAULTS,
+    mode: 'onSubmit',
+  });
 
-  if (open && mode === 'edit' && field && hydrated !== field.id) {
-    setName(field.name);
-    setAddress(field.address ?? '');
-    setMaps(field.google_maps_url ?? '');
-    setPhone(field.contact_phone ?? '');
-    setPitchCount(field.pitch_count);
-    setHasCamera(field.has_camera);
-    setNotes(field.notes ?? '');
-    setHydrated(field.id);
-  }
-  if (open && mode === 'create' && hydrated !== '__new__') {
-    setName('');
-    setAddress('');
-    setMaps('');
-    setPhone('');
-    setPitchCount(1);
-    setHasCamera(false);
-    setNotes('');
-    setHydrated('__new__');
-  }
+  // Hydrate khi mở dialog
+  useEffect(() => {
+    if (!open) return;
+    if (mode === 'edit' && field) {
+      form.reset({
+        name: field.name,
+        address: field.address ?? '',
+        google_maps_url: field.google_maps_url ?? '',
+        contact_phone: field.contact_phone ?? '',
+        pitch_count: field.pitch_count,
+        has_camera: field.has_camera,
+        notes: field.notes ?? '',
+      });
+    } else if (mode === 'create') {
+      form.reset(EMPTY_DEFAULTS);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mode, field?.id]);
 
-  const reset = () => {
-    setHydrated(null);
+  const handleClose = () => {
+    form.reset(EMPTY_DEFAULTS);
     onClose();
   };
 
-  const handleSubmit = () => {
-    const parsed = fieldSchema.safeParse({
-      name,
-      address,
-      google_maps_url: maps,
-      contact_phone: phone,
-      pitch_count: Number(pitchCount),
-      has_camera: hasCamera,
-      notes,
-    });
-
-    if (!parsed.success) {
-      const first = parsed.error.issues[0]?.message ?? 'Dữ liệu không hợp lệ';
-      toast.error(first);
-      return;
-    }
-
+  const onValid = (values: FieldFormInput) => {
+    // values đã pass schema (post-transform): empty strings → null,
+    // pitch_count đã là số nguyên hợp lệ.
+    const out = values as unknown as FieldFormOutput;
     if (mode === 'create') {
-      create.mutate(parsed.data, { onSuccess: reset });
+      create.mutate(out, { onSuccess: handleClose });
     } else if (field) {
-      update.mutate({ id: field.id, patch: parsed.data }, { onSuccess: reset });
+      update.mutate({ id: field.id, patch: out }, { onSuccess: handleClose });
     }
   };
 
   const busy = create.isPending || update.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && reset()}>
+    <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
             {mode === 'create' ? 'Thêm sân mới' : `Sửa: ${field?.name ?? ''}`}
           </DialogTitle>
         </DialogHeader>
-        <div className="grid gap-3 py-1">
-          <DialogField label="Tên sân *">
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Sân Cần Khê"
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onValid)}
+            className="grid gap-3 py-1"
+            noValidate
+          >
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">Tên sân *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Sân Cần Khê" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </DialogField>
-          <DialogField label="Địa chỉ">
-            <Input
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Số 1, đường ABC, Quận X"
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">Địa chỉ</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Số 1, đường ABC, Quận X"
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </DialogField>
-          <DialogField label="Link Google Maps">
-            <Input
-              value={maps}
-              onChange={(e) => setMaps(e.target.value)}
-              placeholder="https://maps.google.com/…"
-              type="url"
+            <FormField
+              control={form.control}
+              name="google_maps_url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">Link Google Maps</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="url"
+                      placeholder="https://maps.google.com/…"
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </DialogField>
-          <DialogField label="SĐT liên hệ (gọi/Zalo)">
-            <Input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="0901234567"
-              type="tel"
-              inputMode="tel"
+            <FormField
+              control={form.control}
+              name="contact_phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">SĐT liên hệ (gọi/Zalo)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="tel"
+                      inputMode="tel"
+                      placeholder="0901234567"
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </DialogField>
-          <div className="grid grid-cols-2 gap-3">
-            <DialogField label="Số sân con">
-              <Input
-                type="number"
-                min={1}
-                max={50}
-                value={pitchCount}
-                onChange={(e) => setPitchCount(Number(e.target.value) || 1)}
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="pitch_count"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Số sân con</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={50}
+                        step={1}
+                        value={
+                          Number.isFinite(field.value as number)
+                            ? (field.value as number)
+                            : ''
+                        }
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          field.onChange(v === '' ? Number.NaN : Number(v));
+                        }}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </DialogField>
-            <div className="flex items-end pb-2">
-              <label className="flex cursor-pointer items-center gap-2 text-sm">
-                <Switch checked={hasCamera} onCheckedChange={setHasCamera} />
-                Có camera
-              </label>
+              <FormField
+                control={form.control}
+                name="has_camera"
+                render={({ field }) => (
+                  <FormItem className="flex items-end pb-2">
+                    <label className="flex cursor-pointer items-center gap-2 text-sm">
+                      <FormControl>
+                        <Switch
+                          checked={field.value as boolean}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      Có camera
+                    </label>
+                  </FormItem>
+                )}
+              />
             </div>
-          </div>
-          <DialogField label="Ghi chú">
-            <Input
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Giá, kích thước, ghi chú khác…"
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">Ghi chú</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Giá, kích thước, ghi chú khác…"
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </DialogField>
-        </div>
-        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
-          <Button variant="outline" onClick={reset} disabled={busy} className="sm:w-auto">
-            Huỷ
-          </Button>
-          <Button onClick={handleSubmit} disabled={busy} className="sm:w-auto">
-            {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {mode === 'create' ? 'Thêm sân' : 'Lưu thay đổi'}
-          </Button>
-        </DialogFooter>
+
+            <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                disabled={busy}
+                className="sm:w-auto"
+              >
+                Huỷ
+              </Button>
+              <Button type="submit" disabled={busy} className="sm:w-auto">
+                {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {mode === 'create' ? 'Thêm sân' : 'Lưu thay đổi'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function DialogField({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label className="text-xs">{label}</Label>
-      {children}
-    </div>
   );
 }
