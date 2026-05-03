@@ -66,8 +66,39 @@ export default async function TeamDashboardPage({
     }
   }
 
-  // TODO: replace mock with real top scorers when match_events ready.
-  const topPlayers: TopPlayer[] = [];
+  // Top 5 cầu thủ theo total_points (goals*3 + assists*2 + clean_sheets) trong
+  // season hiện hành.
+  let topPlayers: TopPlayer[] = [];
+  if (activeSeason) {
+    const { data: rows } = await supabase
+      .from('team_members')
+      .select(
+        'id, display_name, goals, assists, total_points, user:users!team_members_user_id_fkey(name)',
+      )
+      .eq('team_id', team.id)
+      .eq('season_id', activeSeason.id)
+      .eq('approval_status', 'approved')
+      .eq('is_active', true)
+      .gt('total_points', 0)
+      .order('total_points', { ascending: false })
+      .limit(5);
+
+    type Row = {
+      id: string;
+      display_name: string | null;
+      goals: number;
+      assists: number;
+      total_points: number;
+      user: { name: string | null } | null;
+    };
+    topPlayers = ((rows ?? []) as unknown as Row[]).map((r) => ({
+      id: r.id,
+      name: r.user?.name || r.display_name || 'Ẩn danh',
+      goals: r.goals,
+      assists: r.assists,
+      total_points: r.total_points,
+    }));
+  }
 
   return (
     <div className="space-y-6">

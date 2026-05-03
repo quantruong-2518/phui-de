@@ -15,8 +15,9 @@ book slot.
 - [x] API: `GET /api/fields` (public, search ilike), `POST/PATCH/DELETE` admin.
 - [x] Hook `useFields/useCreateField/useUpdateField/useDeleteField` (react-query + axios).
 - [x] UI `/admin/(authed)/fields` mobile-first: search, create/edit dialog, list cards.
-- [ ] Đội chọn sân khi tạo trận (FK `matches.field_id` → migration sau).
-- [ ] Slot/booking, votes, comments, promotions (roadmap).
+- [x] `FieldRow` tách ra `features/fields/components/FieldRow.tsx` (dùng chung cho admin & `/bookings`).
+- [x] `matches.field_id` (mig 014) — form tạo trận chọn sân từ catalog; `/bookings` reuse `FieldRow` + nút "Đá ở đây" → form prefill.
+- [ ] Slot/booking theo khung giờ thật, votes, comments, promotions (roadmap — chưa cần).
 
 ## 3. Schema (`fields`)
 
@@ -64,6 +65,7 @@ CREATE POLICY "Admins can manage fields" FOR ALL
 - `src/features/fields/types/field.types.ts` — `Field`, `FieldInput`.
 - `src/features/fields/validations/field-schemas.ts` — `fieldSchema`.
 - `src/features/fields/hooks/use-fields.ts` — react-query hooks.
+- `src/features/fields/components/FieldRow.tsx` — card UI dùng chung (admin & `/bookings`); nhận `actions` slot.
 - `src/app/admin/(authed)/fields/page.tsx` — server component shell.
 - `src/app/admin/(authed)/fields/fields-client.tsx` — client list + dialog form (RHF + zodResolver).
 - `src/lib/auth/admin-access.ts` — `requireAdmin()` gate cho API.
@@ -87,13 +89,21 @@ CREATE POLICY "Admins can manage fields" FOR ALL
 | SĐT bậy | Zod reject "Số điện thoại không hợp lệ" |
 | Pitch count > 50 | Zod reject "Tối đa 50" |
 
-## 9. Roadmap (chưa làm)
+## 9. Luồng "Đặt sân" hiện tại (post-mig 014)
 
-1. `field_slots` — khung giờ mở của từng pitch.
-2. `bookings` — đội đặt slot, FK matches.
-3. `field_votes` / rating.
-4. `field_comments` — book đối.
-5. `field_promotions` — admin push thông báo giảm giá.
+User vào `/bookings`:
+1. Header + (nếu có) **Sân quen** = sân của trận mới nhất có `field_id` (qua `GET /api/teams/:slug/recent-field`).
+2. Danh sách toàn bộ sân (`useFields`) với search.
+3. Mỗi card có nút **"Đá ở đây"** → mở Dialog `MatchScheduleForm` ngay tại /bookings với `defaultFieldId`.
+4. Submit → tạo match `scheduled` → navigate `/teams/<slug>/dashboard`.
+5. Trận mới xuất hiện trong `UpcomingMatches` (đã wire vào `useMatches(slug, 'scheduled')` thật).
+
+→ Không có khái niệm "giữ slot": booking được derive từ `matches.field_id`.
+
+## 10. Roadmap (chưa làm — không ưu tiên cho MVP)
+
+- `field_slots` + booking khung giờ thật (chỉ làm nếu muốn chống đè slot).
+- `field_votes` / rating, `field_comments` (rủ đối), `field_promotions`.
 
 ## See also
 

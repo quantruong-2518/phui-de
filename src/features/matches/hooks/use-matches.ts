@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import type { Field } from '@/features/fields/types/field.types';
 import type {
   CreateEventInput,
   CreateMatchInput,
@@ -19,6 +20,21 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
     throw new Error(json.error || `Request failed (${res.status})`);
   }
   return json;
+}
+
+/** Sân catalog của trận mới nhất có `field_id`. `null` nếu chưa có. */
+export function useTeamRecentField(slug: string | undefined | null) {
+  return useQuery({
+    queryKey: ['team-recent-field', slug ?? ''],
+    enabled: !!slug,
+    queryFn: async () => {
+      const json = await fetchJson<{ data: Field | null }>(
+        `/api/teams/${slug}/recent-field`,
+      );
+      return json.data;
+    },
+    staleTime: 30 * 1000,
+  });
 }
 
 export function useMatches(slug: string, status?: MatchStatus | 'all') {

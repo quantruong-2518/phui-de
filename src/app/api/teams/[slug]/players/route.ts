@@ -13,6 +13,7 @@ interface RawTeamMemberRow {
   clean_sheets: number;
   total_points: number;
   is_active: boolean;
+  display_name: string | null;
   created_at: string;
   user: { id: string; name: string | null; avatar_url: string | null } | null;
 }
@@ -28,7 +29,7 @@ export async function GET(_req: Request, { params }: Params) {
     .from('team_members')
     .select(
       `id, jersey_code, position, matches_played, goals, assists, clean_sheets,
-       total_points, is_active, joined_at,
+       total_points, is_active, joined_at, display_name,
        user:users!team_members_user_id_fkey (id, name, avatar_url)`,
     )
     .eq('team_id', ctx.team.id)
@@ -45,7 +46,7 @@ export async function GET(_req: Request, { params }: Params) {
   })[];
   const formatted = rows.map((m) => ({
     id: m.id,
-    name: m.user?.name || 'Ẩn danh',
+    name: m.user?.name || m.display_name || 'Ẩn danh',
     code: m.jersey_code,
     position: m.position,
     avatar_url: m.user?.avatar_url ?? null,

@@ -78,40 +78,6 @@ export const MOCK_MATCHES = [
   },
 ];
 
-// Bookings Mock Data
-export const MOCK_BOOKINGS = [
-  {
-    id: '1',
-    field_name: 'Sân Bóng Chảo Lửa',
-    address: '30 Phan Thúc Duyện, Tân Bình',
-    date: '2024-05-20',
-    time_slot: '19:00 - 20:30',
-    price: 450000,
-    status: 'confirmed',
-    image: null,
-  },
-  {
-    id: '2',
-    field_name: 'Sân D3 Bình Thạnh',
-    address: 'D3, Phường 25, Bình Thạnh',
-    date: '2024-05-22',
-    time_slot: '20:30 - 22:00',
-    price: 350000,
-    status: 'pending',
-    image: null,
-  },
-  {
-    id: '3',
-    field_name: 'Sân Viettel',
-    address: '158 Hoàng Hoa Thám, Tân Bình',
-    date: '2024-05-25',
-    time_slot: '17:30 - 19:00',
-    price: 500000,
-    status: 'history', // past booking
-    image: null,
-  },
-];
-
 // Shop Mock Data
 export const MOCK_PRODUCTS = [
   {

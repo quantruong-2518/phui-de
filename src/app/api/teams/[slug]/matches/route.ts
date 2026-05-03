@@ -5,11 +5,16 @@ import { isTeamAccessError, requireTeamAccess } from '@/lib/auth/team-access';
 type Params = { params: Promise<{ slug: string }> };
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Định dạng ngày YYYY-MM-DD');
+const isoTime = z
+  .string()
+  .regex(/^\d{2}:\d{2}(:\d{2})?$/, 'Định dạng giờ HH:MM');
 
 const createSchema = z.object({
   opponent: z.string().trim().min(1).max(80),
   match_date: isoDate,
+  match_time: isoTime,
   field: z.string().trim().min(1).max(120).nullable().optional(),
+  field_id: z.string().uuid().nullable().optional(),
   status: z.enum(['scheduled', 'live', 'finished', 'cancelled']).optional(),
   goals_scored: z.number().int().min(0).optional(),
   goals_conceded: z.number().int().min(0).optional(),
@@ -29,7 +34,9 @@ export async function GET(request: Request, { params }: Params) {
 
   let query = ctx.supabase
     .from('matches')
-    .select('id, opponent, field, match_date, goals_scored, goals_conceded, result, status, season_id, notes, created_at')
+    .select(
+      'id, opponent, field, field_id, match_date, match_time, goals_scored, goals_conceded, result, status, season_id, notes, created_at, field_info:fields(id, name)',
+    )
     .eq('team_id', ctx.team.id)
     .order('match_date', { ascending: false })
     .limit(limit);
@@ -73,7 +80,9 @@ export async function POST(request: Request, { params }: Params) {
       season_id: activeSeason?.id ?? null,
       opponent: parsed.data.opponent,
       match_date: parsed.data.match_date,
+      match_time: parsed.data.match_time,
       field: parsed.data.field ?? null,
+      field_id: parsed.data.field_id ?? null,
       status: parsed.data.status ?? 'scheduled',
       goals_scored: parsed.data.goals_scored ?? 0,
       goals_conceded: parsed.data.goals_conceded ?? 0,

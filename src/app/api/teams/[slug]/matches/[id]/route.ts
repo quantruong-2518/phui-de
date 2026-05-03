@@ -5,12 +5,15 @@ import { isTeamAccessError, requireTeamAccess } from '@/lib/auth/team-access';
 type Params = { params: Promise<{ slug: string; id: string }> };
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const isoTime = z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/);
 
 const patchSchema = z
   .object({
     opponent: z.string().trim().min(1).max(80).optional(),
     match_date: isoDate.optional(),
+    match_time: isoTime.optional(),
     field: z.string().trim().max(120).nullable().optional(),
+    field_id: z.string().uuid().nullable().optional(),
     status: z.enum(['scheduled', 'live', 'finished', 'cancelled']).optional(),
     goals_scored: z.number().int().min(0).optional(),
     goals_conceded: z.number().int().min(0).optional(),
@@ -29,7 +32,7 @@ export async function GET(_req: Request, { params }: Params) {
   const { data: match, error } = await ctx.supabase
     .from('matches')
     .select(
-      `id, opponent, field, match_date, goals_scored, goals_conceded, result, status, season_id, notes, created_at,
+      `id, opponent, field, field_id, match_date, match_time, goals_scored, goals_conceded, result, status, season_id, notes, created_at,
        events:match_events(id, team_member_id, event_type, minute, created_at,
          member:team_members!match_events_team_member_id_fkey(
            id, jersey_code, position,

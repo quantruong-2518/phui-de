@@ -9,7 +9,8 @@ export type Position = 'GK' | 'DF' | 'MF' | 'FW';
 
 export interface TeamMember {
   id: string;
-  user_id: string;
+  user_id: string | null;
+  display_name: string | null;
   role: MemberRole;
   team_role_id: string | null;
   team_role_label: string | null;
@@ -79,6 +80,33 @@ export function useUpdateMember(slug: string) {
       qc.invalidateQueries({ queryKey: ['players', slug] });
       qc.invalidateQueries({ queryKey: ['team-dashboard', slug] });
       toast.success('Đã cập nhật');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export interface CreateMemberInput {
+  display_name?: string;
+  user_id?: string;
+  jersey_code?: string | null;
+  position?: Position | null;
+  team_role_label?: string;
+}
+
+export function useCreateMember(slug: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateMemberInput) =>
+      fetchJson<{ data: TeamMember }>(`/api/teams/${slug}/members`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['members', slug] });
+      qc.invalidateQueries({ queryKey: ['players', slug] });
+      qc.invalidateQueries({ queryKey: ['team-dashboard', slug] });
+      toast.success('Đã thêm thành viên');
     },
     onError: (err: Error) => toast.error(err.message),
   });

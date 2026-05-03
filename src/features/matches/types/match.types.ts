@@ -8,7 +8,11 @@ export interface Match {
   season_id: string | null;
   opponent: string;
   field: string | null;
+  field_id: string | null;
+  /** Join từ catalog `fields` khi field_id != null. */
+  field_info?: { id: string; name: string } | null;
   match_date: string; // YYYY-MM-DD
+  match_time: string; // HH:MM hoặc HH:MM:SS
   goals_scored: number;
   goals_conceded: number;
   result: MatchResult | null;
@@ -38,7 +42,9 @@ export interface MatchWithEvents extends Match {
 export interface CreateMatchInput {
   opponent: string;
   match_date: string;
+  match_time: string; // HH:MM
   field?: string | null;
+  field_id?: string | null;
   status?: MatchStatus;
   notes?: string | null;
 }
@@ -46,7 +52,9 @@ export interface CreateMatchInput {
 export interface UpdateMatchInput {
   opponent?: string;
   match_date?: string;
+  match_time?: string;
   field?: string | null;
+  field_id?: string | null;
   status?: MatchStatus;
   goals_scored?: number;
   goals_conceded?: number;
