@@ -26,7 +26,7 @@ export default async function TeamLayout({
   if (!team) notFound();
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 p-4 pb-28 sm:p-6 sm:pb-6 lg:p-8 lg:pb-8">
+    <div className="mx-auto w-full max-w-5xl space-y-6 p-4 pb-32 sm:p-6 sm:pb-6 lg:p-8 lg:pb-8">
       {/* ===== Team Header ===== */}
       <div className="card-featured relative overflow-hidden rounded-[20px] p-5 md:p-6">
         <div className="absolute top-0 right-0 h-32 w-32 translate-x-1/3 -translate-y-1/3 rotate-45 transform bg-white/5 blur-3xl" />

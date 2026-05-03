@@ -70,12 +70,12 @@ export function TeamNav({ slug }: { slug: string }) {
         })}
       </div>
 
-      {/* Mobile: fixed bottom bar with raised center action */}
+      {/* Mobile: floating bottom bar — bo, shadow, gradient nhẹ */}
       <nav
-        className="bg-background/95 supports-[backdrop-filter]:bg-background/80 fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur md:hidden"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        className="fixed inset-x-3 bottom-3 z-40 md:hidden"
+        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="mx-auto grid h-16 max-w-5xl grid-cols-5 items-end">
+        <div className="from-primary/10 via-card to-card supports-[backdrop-filter]:bg-card/85 grid h-16 grid-cols-5 items-end overflow-hidden rounded-3xl bg-gradient-to-br shadow-[0_12px_40px_-10px_rgba(0,0,0,0.35)] backdrop-blur">
           {teamNavItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item);
@@ -89,7 +89,7 @@ export function TeamNav({ slug }: { slug: string }) {
                   aria-label={item.label}
                 >
                   <span
-                    className={`bg-primary ring-background absolute -top-5 flex h-12 w-12 items-center justify-center rounded-full shadow-lg ring-4 transition-transform active:scale-95 ${
+                    className={`from-primary to-primary/80 absolute -top-5 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br shadow-lg shadow-primary/40 transition-transform active:scale-95 ${
                       active ? 'scale-105' : ''
                     }`}
                   >
