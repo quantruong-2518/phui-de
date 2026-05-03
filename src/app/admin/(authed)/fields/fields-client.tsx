@@ -50,7 +50,10 @@ const EMPTY_DEFAULTS: FieldFormInput = {
   name: '',
   address: '',
   google_maps_url: '',
+  contact_name: '',
   contact_phone: '',
+  contact_name_2: '',
+  contact_phone_2: '',
   pitch_count: 1,
   has_camera: false,
   notes: '',
@@ -150,6 +153,25 @@ export function FieldsClient() {
   );
 }
 
+function ContactLink({
+  name,
+  phone,
+}: {
+  name: string | null;
+  phone: string;
+}) {
+  return (
+    <a
+      href={`tel:${phone}`}
+      className="hover:text-foreground inline-flex w-fit items-center gap-1"
+    >
+      <Phone className="h-3 w-3" />
+      <span>{phone}</span>
+      {name && <span className="text-muted-foreground/70">· {name}</span>}
+    </a>
+  );
+}
+
 function FieldRow({
   field,
   onEdit,
@@ -185,22 +207,25 @@ function FieldRow({
           </p>
         )}
 
-        <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+        <div className="text-muted-foreground flex flex-col gap-y-0.5 text-xs">
           {field.contact_phone && (
-            <a
-              href={`tel:${field.contact_phone}`}
-              className="hover:text-foreground inline-flex items-center gap-1"
-            >
-              <Phone className="h-3 w-3" />
-              {field.contact_phone}
-            </a>
+            <ContactLink
+              name={field.contact_name}
+              phone={field.contact_phone}
+            />
+          )}
+          {field.contact_phone_2 && (
+            <ContactLink
+              name={field.contact_name_2}
+              phone={field.contact_phone_2}
+            />
           )}
           {field.google_maps_url && (
             <a
               href={field.google_maps_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-foreground inline-flex items-center gap-1"
+              className="hover:text-foreground inline-flex w-fit items-center gap-1"
             >
               <MapPinned className="h-3 w-3" />
               Bản đồ
@@ -366,28 +391,20 @@ function FieldDialog({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="contact_phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs">SĐT liên hệ (gọi/Zalo)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="tel"
-                      inputMode="tel"
-                      placeholder="0901234567"
-                      value={field.value ?? ''}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      ref={field.ref}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <ContactRow
+              form={form}
+              index={1}
+              nameField="contact_name"
+              phoneField="contact_phone"
+              required
             />
+            <ContactRow
+              form={form}
+              index={2}
+              nameField="contact_name_2"
+              phoneField="contact_phone_2"
+            />
+
             <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
@@ -478,5 +495,70 @@ function FieldDialog({
         </Form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ContactRow({
+  form,
+  index,
+  nameField,
+  phoneField,
+  required,
+}: {
+  form: ReturnType<typeof useForm<FieldFormInput>>;
+  index: number;
+  nameField: 'contact_name' | 'contact_name_2';
+  phoneField: 'contact_phone' | 'contact_phone_2';
+  required?: boolean;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <FormLabel className="text-xs">
+        Liên hệ {index}
+        {required ? '' : ' (tuỳ chọn)'}
+      </FormLabel>
+      <div className="grid grid-cols-2 gap-2">
+        <FormField
+          control={form.control}
+          name={nameField}
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <Input
+                  placeholder="Tên người liên hệ"
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                  ref={field.ref}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name={phoneField}
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <Input
+                  type="tel"
+                  inputMode="tel"
+                  placeholder="0901234567"
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                  ref={field.ref}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+    </div>
   );
 }

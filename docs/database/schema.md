@@ -135,7 +135,7 @@ UPSERT bởi trigger `bump_team_season_stats` khi match vào `finished`.
 | event_type | TEXT NOT NULL | CHECK `'goal','assist','clean_sheet','own_goal'` |
 | minute | INTEGER | CHECK `0 <= minute <= 200 OR NULL` |
 
-### fields `migration 011`
+### fields `migration 011, 012`
 
 Catalog sân bóng do ADMIN duy trì. Đội/người chơi xem (public read) → tạo trận sẽ
 chọn `field_id` từ đây và book theo slot (sẽ làm ở migration sau).
@@ -146,7 +146,10 @@ chọn `field_id` từ đây và book theo slot (sẽ làm ở migration sau).
 | name | TEXT NOT NULL | |
 | address | TEXT | |
 | google_maps_url | TEXT | link cop từ Google Maps app |
-| contact_phone | TEXT | số gọi/Zalo |
+| contact_name | TEXT | tên người liên hệ chính (012) |
+| contact_phone | TEXT | SĐT chính (gọi/Zalo) |
+| contact_name_2 | TEXT | tên liên hệ phụ (012) |
+| contact_phone_2 | TEXT | SĐT phụ (012) |
 | pitch_count | INTEGER NOT NULL default 1 | CHECK `1 ≤ pitch_count ≤ 50` |
 | has_camera | BOOLEAN NOT NULL default `false` | |
 | notes | TEXT | meta khác (giá, kích thước, ghi chú) |
