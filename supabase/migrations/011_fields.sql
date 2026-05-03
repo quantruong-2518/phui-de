@@ -5,8 +5,14 @@
 -- Bảng `fields` lưu thông tin các sân bóng để dùng cho tab Đặt sân và replace
 -- column `matches.field` (text free-form) bằng FK lookup ở các module sau.
 --
--- MVP scope: ai đăng nhập cũng tạo được, công khai cho mọi người đọc.
--- Edit/xoá: chỉ người tạo hoặc ADMIN.
+-- MVP scope: catalog do ADMIN duy trì. Đội xem & book theo slot khi tạo trận.
+-- Read: public.  Mutate (insert/update/delete): chỉ `users.role = 'ADMIN'`.
+--
+-- Future scope (chưa làm):
+--   - field_slots: khung giờ mở của từng sân con (theo `pitch_count`).
+--   - bookings: 1 đội đặt 1 slot, có status (open/locked/cancelled).
+--   - field_votes / field_comments: rating + thảo luận book đối.
+--   - field_promotions: thông báo giảm giá từ admin sân.
 
 -- ============================================================================
 -- 1. Table
@@ -51,38 +57,18 @@ DROP POLICY IF EXISTS "Anyone can read fields" ON public.fields;
 CREATE POLICY "Anyone can read fields" ON public.fields
   FOR SELECT USING (true);
 
--- Insert: bất kỳ user đã đăng nhập, miễn `created_by = mình`.
-DROP POLICY IF EXISTS "Authenticated can create fields" ON public.fields;
-CREATE POLICY "Authenticated can create fields" ON public.fields
-  FOR INSERT
-  WITH CHECK (auth.uid() IS NOT NULL AND created_by = auth.uid());
-
--- Update: người tạo, hoặc ADMIN.
-DROP POLICY IF EXISTS "Creator or admin can update fields" ON public.fields;
-CREATE POLICY "Creator or admin can update fields" ON public.fields
-  FOR UPDATE
+-- Mutate (insert/update/delete): chỉ ADMIN.
+DROP POLICY IF EXISTS "Admins can manage fields" ON public.fields;
+CREATE POLICY "Admins can manage fields" ON public.fields
+  FOR ALL
   USING (
-    created_by = auth.uid()
-    OR EXISTS (
+    EXISTS (
       SELECT 1 FROM public.users u
       WHERE u.id = auth.uid() AND u.role = 'ADMIN'
     )
   )
   WITH CHECK (
-    created_by = auth.uid()
-    OR EXISTS (
-      SELECT 1 FROM public.users u
-      WHERE u.id = auth.uid() AND u.role = 'ADMIN'
-    )
-  );
-
--- Delete: người tạo, hoặc ADMIN.
-DROP POLICY IF EXISTS "Creator or admin can delete fields" ON public.fields;
-CREATE POLICY "Creator or admin can delete fields" ON public.fields
-  FOR DELETE
-  USING (
-    created_by = auth.uid()
-    OR EXISTS (
+    EXISTS (
       SELECT 1 FROM public.users u
       WHERE u.id = auth.uid() AND u.role = 'ADMIN'
     )

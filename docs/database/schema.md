@@ -137,7 +137,8 @@ UPSERT bởi trigger `bump_team_season_stats` khi match vào `finished`.
 
 ### fields `migration 011`
 
-Catalog sân bóng cộng đồng. User-contributed (ai đăng nhập cũng tạo được). Public read.
+Catalog sân bóng do ADMIN duy trì. Đội/người chơi xem (public read) → tạo trận sẽ
+chọn `field_id` từ đây và book theo slot (sẽ làm ở migration sau).
 
 | Cột | Kiểu | Note |
 |-----|------|------|
@@ -149,10 +150,13 @@ Catalog sân bóng cộng đồng. User-contributed (ai đăng nhập cũng tạ
 | pitch_count | INTEGER NOT NULL default 1 | CHECK `1 ≤ pitch_count ≤ 50` |
 | has_camera | BOOLEAN NOT NULL default `false` | |
 | notes | TEXT | meta khác (giá, kích thước, ghi chú) |
-| created_by | UUID | FK users ON DELETE SET NULL |
+| created_by | UUID | FK users ON DELETE SET NULL — admin nào tạo |
 | created_at, updated_at | TIMESTAMPTZ | |
 
-RLS: read public; insert chỉ user đã login (`created_by = auth.uid()`); update/delete chỉ creator hoặc `users.role = 'ADMIN'`.
+RLS: read public; mutate (insert/update/delete) chỉ `users.role = 'ADMIN'`.
+
+**Future scope** (chưa làm): `field_slots` (khung giờ), `bookings` (đội đặt slot),
+`field_votes` / `field_comments`, `field_promotions`.
 
 ## Indexes
 
