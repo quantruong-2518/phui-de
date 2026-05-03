@@ -71,7 +71,10 @@ export function TeamNav({ slug }: { slug: string }) {
       </div>
 
       {/* Mobile: fixed bottom bar with raised center action */}
-      <nav className="bg-background/95 supports-[backdrop-filter]:bg-background/80 fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur md:hidden">
+      <nav
+        className="bg-background/95 supports-[backdrop-filter]:bg-background/80 fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur md:hidden"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
         <div className="mx-auto grid h-16 max-w-5xl grid-cols-5 items-end">
           {teamNavItems.map((item) => {
             const Icon = item.icon;
