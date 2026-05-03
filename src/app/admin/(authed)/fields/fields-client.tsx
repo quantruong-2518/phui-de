@@ -29,7 +29,6 @@ import type { Field } from '@/features/fields/types/field.types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Camera,
-  ExternalLink,
   Loader2,
   MapPinned,
   Pencil,
@@ -152,30 +151,6 @@ export function FieldsClient() {
   );
 }
 
-function MetaPill({
-  icon,
-  label,
-  tone = 'muted',
-}: {
-  icon?: React.ReactNode;
-  label: React.ReactNode;
-  tone?: 'muted' | 'amber' | 'primary';
-}) {
-  const toneClass = {
-    muted: 'bg-muted/60 text-foreground',
-    amber: 'bg-amber-500/15 text-amber-700',
-    primary: 'bg-primary/10 text-primary',
-  }[tone];
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${toneClass}`}
-    >
-      {icon}
-      {label}
-    </span>
-  );
-}
-
 function ContactChip({
   name,
   phone,
@@ -199,18 +174,27 @@ function ContactChip({
   );
 }
 
-function MapsChip({ href }: { href: string }) {
+function AmenityIcon({
+  icon,
+  title,
+  tone = 'amber',
+}: {
+  icon: React.ReactNode;
+  title: string;
+  tone?: 'amber' | 'sky';
+}) {
+  const toneClass = {
+    amber: 'bg-amber-500/15 text-amber-600',
+    sky: 'bg-sky-500/15 text-sky-600',
+  }[tone];
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="bg-primary/10 text-primary hover:bg-primary/20 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors"
+    <span
+      className={`inline-flex h-7 w-7 items-center justify-center rounded-full ${toneClass}`}
+      title={title}
+      aria-label={title}
     >
-      <MapPinned className="h-3 w-3" />
-      Bản đồ
-      <ExternalLink className="h-3 w-3" />
-    </a>
+      {icon}
+    </span>
   );
 }
 
@@ -225,83 +209,98 @@ function FieldRow({
   onDelete: () => void;
   busyDelete: boolean;
 }) {
+  const hasContact = field.contact_phone || field.contact_phone_2;
+  const hasAmenity = field.has_camera;
+
   return (
-    <article className="bg-card group rounded-2xl p-3 shadow-sm transition-shadow hover:shadow-md sm:p-4">
-      <div className="flex items-start gap-3">
-        <div className="bg-amber-500/10 text-amber-600 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12">
-          <MapPinned className="h-5 w-5 sm:h-6 sm:w-6" />
-        </div>
-
-        <div className="min-w-0 flex-1 space-y-2">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="truncate text-base font-bold sm:text-lg">
-              {field.name}
-            </h3>
-            <div className="-mt-1 flex shrink-0 items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:text-foreground h-8 w-8"
-                onClick={onEdit}
-                aria-label="Sửa"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:text-destructive h-8 w-8"
-                onClick={onDelete}
-                disabled={busyDelete}
-                aria-label="Xoá"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1.5">
-            <MetaPill label={`${field.pitch_count} sân`} />
-            {field.has_camera && (
-              <MetaPill
-                icon={<Camera className="h-3 w-3" />}
-                label="Có cam"
-                tone="amber"
-              />
-            )}
-            {field.google_maps_url && <MapsChip href={field.google_maps_url} />}
-          </div>
-
-          {field.address && (
-            <p className="text-muted-foreground truncate text-xs sm:text-sm">
-              {field.address}
-            </p>
+    <article className="bg-card rounded-2xl p-3 shadow-sm transition-shadow hover:shadow-md sm:p-4">
+      {/* Row 1: tên + (n sân) — actions phải */}
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="min-w-0 flex-1 truncate text-base font-bold sm:text-lg">
+          {field.name}
+          <span className="text-muted-foreground ml-1.5 text-sm font-medium">
+            ({field.pitch_count} sân)
+          </span>
+        </h3>
+        <div className="-mr-1.5 -mt-1 flex shrink-0 items-center">
+          {field.google_maps_url && (
+            <a
+              href={field.google_maps_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-primary inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors"
+              aria-label="Mở Google Maps"
+              title="Bản đồ"
+            >
+              <MapPinned className="h-4 w-4" />
+            </a>
           )}
-
-          {(field.contact_phone || field.contact_phone_2) && (
-            <div className="flex flex-wrap gap-1.5 pt-0.5">
-              {field.contact_phone && (
-                <ContactChip
-                  name={field.contact_name}
-                  phone={field.contact_phone}
-                />
-              )}
-              {field.contact_phone_2 && (
-                <ContactChip
-                  name={field.contact_name_2}
-                  phone={field.contact_phone_2}
-                />
-              )}
-            </div>
-          )}
-
-          {field.notes && (
-            <p className="text-muted-foreground/80 hidden text-xs italic sm:block">
-              {field.notes}
-            </p>
-          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-foreground h-8 w-8"
+            onClick={onEdit}
+            aria-label="Sửa"
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-destructive h-8 w-8"
+            onClick={onDelete}
+            disabled={busyDelete}
+            aria-label="Xoá"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
       </div>
+
+      {/* Row 2: địa chỉ */}
+      {field.address && (
+        <p className="text-muted-foreground mt-0.5 truncate text-xs sm:text-sm">
+          {field.address}
+        </p>
+      )}
+
+      {/* Row 3: contacts trái — amenities phải */}
+      {(hasContact || hasAmenity) && (
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-wrap gap-1.5">
+            {field.contact_phone && (
+              <ContactChip
+                name={field.contact_name}
+                phone={field.contact_phone}
+              />
+            )}
+            {field.contact_phone_2 && (
+              <ContactChip
+                name={field.contact_name_2}
+                phone={field.contact_phone_2}
+              />
+            )}
+          </div>
+          {hasAmenity && (
+            <div className="flex shrink-0 items-center gap-1">
+              {field.has_camera && (
+                <AmenityIcon
+                  icon={<Camera className="h-3.5 w-3.5" />}
+                  title="Có camera"
+                />
+              )}
+              {/* Tương lai: icon WC, parking, … */}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Ghi chú phụ — ẩn mobile */}
+      {field.notes && (
+        <p className="text-muted-foreground/80 mt-2 hidden text-xs italic sm:block">
+          {field.notes}
+        </p>
+      )}
     </article>
   );
 }
