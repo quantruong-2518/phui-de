@@ -9,6 +9,8 @@ function isPublic(pathname: string) {
   if (pathname.startsWith('/auth/')) return true;
   if (pathname.startsWith('/_next/')) return true;
   if (pathname.startsWith('/api/')) return true;
+  // /admin/* tự gate trong layout (admin login flow tách khỏi user flow phone-based)
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) return true;
   return false;
 }
 
