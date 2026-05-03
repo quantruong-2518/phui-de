@@ -1,9 +1,14 @@
+import { AuthLayout } from '@/features/auth';
 import { createClient } from '@/lib/supabase/server';
+import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { AdminLoginForm } from './login-form';
 
+export const metadata: Metadata = {
+  title: 'Đăng nhập Admin',
+};
+
 export default async function AdminLoginPage() {
-  // Nếu đã login với role ADMIN → vào thẳng /admin/fields.
   const supabase = await createClient();
   const {
     data: { user },
@@ -21,16 +26,11 @@ export default async function AdminLoginPage() {
   }
 
   return (
-    <div className="bg-muted/30 flex min-h-screen items-center justify-center p-4">
-      <div className="bg-card w-full max-w-sm rounded-2xl p-8 shadow-md">
-        <div className="mb-6 space-y-1 text-center">
-          <h1 className="text-xl font-bold tracking-tight">Admin Phủ Đê</h1>
-          <p className="text-muted-foreground text-xs">
-            Đăng nhập tài khoản quản trị
-          </p>
-        </div>
-        <AdminLoginForm />
-      </div>
-    </div>
+    <AuthLayout
+      title="Quản trị Phủ Đê"
+      subtitle="Khu admin — chỉ tài khoản quản trị"
+    >
+      <AdminLoginForm />
+    </AuthLayout>
   );
 }

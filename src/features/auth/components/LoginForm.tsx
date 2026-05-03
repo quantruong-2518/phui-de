@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Shield } from 'lucide-react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../hooks/use-auth';
@@ -91,14 +92,25 @@ export function LoginForm() {
         </Link>
       </div>
 
-      <div className="text-center">
-        <Link
-          href="/admin/login"
-          className="text-muted-foreground hover:text-foreground text-xs underline-offset-4 hover:underline"
-        >
-          Đăng nhập admin
-        </Link>
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="border-border w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
+          <span className="bg-background text-muted-foreground px-2">hoặc</span>
+        </div>
       </div>
+
+      <Link href="/admin/login" className="block">
+        <Button
+          type="button"
+          variant="outline"
+          className="text-muted-foreground hover:text-foreground w-full gap-2"
+        >
+          <Shield className="h-4 w-4" />
+          Đăng nhập quản trị
+        </Button>
+      </Link>
     </div>
   );
 }
