@@ -75,7 +75,7 @@ export function TeamNav({ slug }: { slug: string }) {
         className="fixed inset-x-3 bottom-3 z-40 md:hidden"
         style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="from-primary/10 via-card to-card supports-[backdrop-filter]:bg-card/85 grid h-16 grid-cols-5 items-end overflow-hidden rounded-3xl bg-gradient-to-br shadow-[0_12px_40px_-10px_rgba(0,0,0,0.35)] backdrop-blur">
+        <div className="from-primary/10 via-card to-card supports-[backdrop-filter]:bg-card/85 grid h-16 grid-cols-5 items-end rounded-3xl bg-gradient-to-br shadow-[0_12px_40px_-10px_rgba(0,0,0,0.35)] backdrop-blur">
           {teamNavItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item);
