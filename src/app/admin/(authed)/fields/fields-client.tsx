@@ -20,7 +20,6 @@ import {
 } from '@/features/fields/hooks/use-fields';
 import {
   fieldSchema,
-  type FieldSchema,
 } from '@/features/fields/validations/field-schemas';
 import type { Field } from '@/features/fields/types/field.types';
 import {
@@ -34,7 +33,7 @@ import {
   Search,
   Trash2,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export function FieldsClient() {
@@ -43,8 +42,7 @@ export function FieldsClient() {
   const [editing, setEditing] = useState<Field | null>(null);
   const [creating, setCreating] = useState(false);
 
-  // simple debounce
-  useMemo(() => {
+  useEffect(() => {
     const t = setTimeout(() => setDebounced(search.trim()), 250);
     return () => clearTimeout(t);
   }, [search]);
@@ -53,13 +51,16 @@ export function FieldsClient() {
   const remove = useDeleteField();
 
   const handleDelete = (f: Field) => {
-    if (confirm(`Xoá sân "${f.name}"? Hành động không hoàn tác được.`)) {
+    if (confirm(`Xoá sân "${f.name}"? Không hoàn tác được.`)) {
       remove.mutate(f.id);
     }
   };
 
+  const count = fields?.length ?? 0;
+
   return (
     <div className="space-y-4">
+      {/* Toolbar — mobile-first: stack, sm+ horizontal */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -70,23 +71,38 @@ export function FieldsClient() {
             className="pl-9"
           />
         </div>
-        <Button onClick={() => setCreating(true)} className="gap-1.5">
+        <Button onClick={() => setCreating(true)} className="w-full gap-1.5 sm:w-auto">
           <Plus className="h-4 w-4" />
           Thêm sân
         </Button>
+      </div>
+
+      {/* Section title + count */}
+      <div className="flex items-center gap-2">
+        <MapPinned className="text-muted-foreground h-4 w-4" />
+        <h2 className="text-sm font-bold tracking-tight">
+          Danh sách sân
+          {!isLoading && (
+            <span className="text-muted-foreground ml-2 font-normal">
+              ({count})
+            </span>
+          )}
+        </h2>
       </div>
 
       {isLoading ? (
         <div className="flex h-40 items-center justify-center">
           <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
         </div>
-      ) : !fields || fields.length === 0 ? (
-        <div className="bg-muted/30 text-muted-foreground rounded-xl py-16 text-center text-sm">
-          {debounced ? 'Không tìm thấy sân nào.' : 'Chưa có sân nào. Bấm “Thêm sân” để bắt đầu.'}
+      ) : count === 0 ? (
+        <div className="bg-muted/30 text-muted-foreground rounded-xl py-12 text-center text-sm">
+          {debounced
+            ? 'Không tìm thấy sân nào.'
+            : 'Chưa có sân nào. Bấm “Thêm sân” để bắt đầu.'}
         </div>
       ) : (
         <div className="space-y-2">
-          {fields.map((f) => (
+          {fields!.map((f) => (
             <FieldRow
               key={f.id}
               field={f}
@@ -125,10 +141,13 @@ function FieldRow({
   busyDelete: boolean;
 }) {
   return (
-    <div className="bg-card flex flex-col gap-3 rounded-xl p-4 shadow-sm sm:flex-row sm:items-center">
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="truncate font-semibold">{field.name}</h3>
+    <div className="bg-card flex items-start gap-3 rounded-xl p-3 shadow-sm sm:p-4">
+      <div className="min-w-0 flex-1 space-y-1">
+        {/* Tên + badges (always) */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <h3 className="truncate text-sm font-semibold sm:text-base">
+            {field.name}
+          </h3>
           <Badge variant="secondary" className="text-[10px]">
             {field.pitch_count} sân
           </Badge>
@@ -139,12 +158,16 @@ function FieldRow({
             </Badge>
           )}
         </div>
+
+        {/* Địa chỉ — quan trọng, hiện cả mobile */}
         {field.address && (
-          <p className="text-muted-foreground mt-1 truncate text-xs">
+          <p className="text-muted-foreground truncate text-xs">
             {field.address}
           </p>
         )}
-        <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+
+        {/* Liên hệ + maps — quan trọng action, hiện cả mobile */}
+        <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
           {field.contact_phone && (
             <a
               href={`tel:${field.contact_phone}`}
@@ -167,13 +190,17 @@ function FieldRow({
             </a>
           )}
         </div>
+
+        {/* Notes — phụ, ẩn mobile để giữ row gọn */}
         {field.notes && (
-          <p className="text-muted-foreground/80 mt-1 text-xs italic">
+          <p className="text-muted-foreground/80 hidden text-xs italic sm:block">
             {field.notes}
           </p>
         )}
       </div>
-      <div className="flex items-center gap-1 sm:flex-col">
+
+      {/* Actions — icon-only chấp nhận được vì là utility action universal */}
+      <div className="flex shrink-0 items-center">
         <Button
           variant="ghost"
           size="icon"
@@ -221,7 +248,6 @@ function FieldDialog({
   const [notes, setNotes] = useState('');
   const [hydrated, setHydrated] = useState<string | null>(null);
 
-  // Hydrate state khi mở dialog edit
   if (open && mode === 'edit' && field && hydrated !== field.id) {
     setName(field.name);
     setAddress(field.address ?? '');
@@ -283,29 +309,29 @@ function FieldDialog({
           </DialogTitle>
         </DialogHeader>
         <div className="grid gap-3 py-1">
-          <Field label="Tên sân *">
+          <DialogField label="Tên sân *">
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Sân Cần Khê"
             />
-          </Field>
-          <Field label="Địa chỉ">
+          </DialogField>
+          <DialogField label="Địa chỉ">
             <Input
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Số 1, đường ABC, Quận X"
             />
-          </Field>
-          <Field label="Link Google Maps">
+          </DialogField>
+          <DialogField label="Link Google Maps">
             <Input
               value={maps}
               onChange={(e) => setMaps(e.target.value)}
               placeholder="https://maps.google.com/…"
               type="url"
             />
-          </Field>
-          <Field label="SĐT liên hệ (gọi/Zalo)">
+          </DialogField>
+          <DialogField label="SĐT liên hệ (gọi/Zalo)">
             <Input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -313,9 +339,9 @@ function FieldDialog({
               type="tel"
               inputMode="tel"
             />
-          </Field>
+          </DialogField>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Số sân con">
+            <DialogField label="Số sân con">
               <Input
                 type="number"
                 min={1}
@@ -323,7 +349,7 @@ function FieldDialog({
                 value={pitchCount}
                 onChange={(e) => setPitchCount(Number(e.target.value) || 1)}
               />
-            </Field>
+            </DialogField>
             <div className="flex items-end pb-2">
               <label className="flex cursor-pointer items-center gap-2 text-sm">
                 <Switch checked={hasCamera} onCheckedChange={setHasCamera} />
@@ -331,19 +357,19 @@ function FieldDialog({
               </label>
             </div>
           </div>
-          <Field label="Ghi chú">
+          <DialogField label="Ghi chú">
             <Input
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Giá, kích thước, ghi chú khác…"
             />
-          </Field>
+          </DialogField>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={reset} disabled={busy}>
+        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
+          <Button variant="outline" onClick={reset} disabled={busy} className="sm:w-auto">
             Huỷ
           </Button>
-          <Button onClick={handleSubmit} disabled={busy}>
+          <Button onClick={handleSubmit} disabled={busy} className="sm:w-auto">
             {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {mode === 'create' ? 'Thêm sân' : 'Lưu thay đổi'}
           </Button>
@@ -353,7 +379,7 @@ function FieldDialog({
   );
 }
 
-function Field({
+function DialogField({
   label,
   children,
 }: {
