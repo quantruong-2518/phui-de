@@ -1,6 +1,5 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -153,7 +152,31 @@ export function FieldsClient() {
   );
 }
 
-function ContactLink({
+function MetaPill({
+  icon,
+  label,
+  tone = 'muted',
+}: {
+  icon?: React.ReactNode;
+  label: React.ReactNode;
+  tone?: 'muted' | 'amber' | 'primary';
+}) {
+  const toneClass = {
+    muted: 'bg-muted/60 text-foreground',
+    amber: 'bg-amber-500/15 text-amber-700',
+    primary: 'bg-primary/10 text-primary',
+  }[tone];
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${toneClass}`}
+    >
+      {icon}
+      {label}
+    </span>
+  );
+}
+
+function ContactChip({
   name,
   phone,
 }: {
@@ -163,11 +186,30 @@ function ContactLink({
   return (
     <a
       href={`tel:${phone}`}
-      className="hover:text-foreground inline-flex w-fit items-center gap-1"
+      className="bg-muted/50 hover:bg-muted/80 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs transition-colors"
     >
       <Phone className="h-3 w-3" />
-      <span>{phone}</span>
-      {name && <span className="text-muted-foreground/70">· {name}</span>}
+      <span className="font-mono font-semibold">{phone}</span>
+      {name && (
+        <span className="text-muted-foreground border-border border-l pl-1.5">
+          {name}
+        </span>
+      )}
+    </a>
+  );
+}
+
+function MapsChip({ href }: { href: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="bg-primary/10 text-primary hover:bg-primary/20 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors"
+    >
+      <MapPinned className="h-3 w-3" />
+      Bản đồ
+      <ExternalLink className="h-3 w-3" />
     </a>
   );
 }
@@ -184,85 +226,83 @@ function FieldRow({
   busyDelete: boolean;
 }) {
   return (
-    <div className="bg-card flex items-start gap-3 rounded-xl p-3 shadow-sm sm:p-4">
-      <div className="min-w-0 flex-1 space-y-1">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <h3 className="truncate text-sm font-semibold sm:text-base">
-            {field.name}
-          </h3>
-          <Badge variant="secondary" className="text-[10px]">
-            {field.pitch_count} sân
-          </Badge>
-          {field.has_camera && (
-            <Badge variant="outline" className="gap-1 text-[10px]">
-              <Camera className="h-3 w-3" />
-              Có cam
-            </Badge>
-          )}
+    <article className="bg-card group rounded-2xl p-3 shadow-sm transition-shadow hover:shadow-md sm:p-4">
+      <div className="flex items-start gap-3">
+        <div className="bg-amber-500/10 text-amber-600 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12">
+          <MapPinned className="h-5 w-5 sm:h-6 sm:w-6" />
         </div>
 
-        {field.address && (
-          <p className="text-muted-foreground truncate text-xs">
-            {field.address}
-          </p>
-        )}
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="truncate text-base font-bold sm:text-lg">
+              {field.name}
+            </h3>
+            <div className="-mt-1 flex shrink-0 items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-foreground h-8 w-8"
+                onClick={onEdit}
+                aria-label="Sửa"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-destructive h-8 w-8"
+                onClick={onDelete}
+                disabled={busyDelete}
+                aria-label="Xoá"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
 
-        <div className="text-muted-foreground flex flex-col gap-y-0.5 text-xs">
-          {field.contact_phone && (
-            <ContactLink
-              name={field.contact_name}
-              phone={field.contact_phone}
-            />
+          <div className="flex flex-wrap items-center gap-1.5">
+            <MetaPill label={`${field.pitch_count} sân`} />
+            {field.has_camera && (
+              <MetaPill
+                icon={<Camera className="h-3 w-3" />}
+                label="Có cam"
+                tone="amber"
+              />
+            )}
+            {field.google_maps_url && <MapsChip href={field.google_maps_url} />}
+          </div>
+
+          {field.address && (
+            <p className="text-muted-foreground truncate text-xs sm:text-sm">
+              {field.address}
+            </p>
           )}
-          {field.contact_phone_2 && (
-            <ContactLink
-              name={field.contact_name_2}
-              phone={field.contact_phone_2}
-            />
+
+          {(field.contact_phone || field.contact_phone_2) && (
+            <div className="flex flex-wrap gap-1.5 pt-0.5">
+              {field.contact_phone && (
+                <ContactChip
+                  name={field.contact_name}
+                  phone={field.contact_phone}
+                />
+              )}
+              {field.contact_phone_2 && (
+                <ContactChip
+                  name={field.contact_name_2}
+                  phone={field.contact_phone_2}
+                />
+              )}
+            </div>
           )}
-          {field.google_maps_url && (
-            <a
-              href={field.google_maps_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-foreground inline-flex w-fit items-center gap-1"
-            >
-              <MapPinned className="h-3 w-3" />
-              Bản đồ
-              <ExternalLink className="h-3 w-3" />
-            </a>
+
+          {field.notes && (
+            <p className="text-muted-foreground/80 hidden text-xs italic sm:block">
+              {field.notes}
+            </p>
           )}
         </div>
-
-        {field.notes && (
-          <p className="text-muted-foreground/80 hidden text-xs italic sm:block">
-            {field.notes}
-          </p>
-        )}
       </div>
-
-      <div className="flex shrink-0 items-center">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-muted-foreground hover:text-foreground h-8 w-8"
-          onClick={onEdit}
-          aria-label="Sửa"
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-muted-foreground hover:text-destructive h-8 w-8"
-          onClick={onDelete}
-          disabled={busyDelete}
-          aria-label="Xoá"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
+    </article>
   );
 }
 
