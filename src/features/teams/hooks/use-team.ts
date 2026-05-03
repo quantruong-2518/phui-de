@@ -4,42 +4,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { Team } from '../types/team.types';
 
-interface DashboardStats {
-  totalPlayers: number;
-  totalMatches: number;
-  wins: number;
-  draws: number;
-  losses: number;
-  goalsScored: number;
-  goalsConceded: number;
-  winRate: number;
-  totalPoints: number;
-}
-
-interface DashboardData {
-  team: { id: string; slug: string; name: string };
-  season: { id: string; year: number; name: string } | null;
-  stats: DashboardStats;
-  recentMatches: Array<{
-    id: string;
-    opponent: string;
-    match_date: string;
-    result: 'W' | 'L' | 'D' | null;
-    goals_scored: number;
-    goals_conceded: number;
-    status: string;
-  }>;
-  topScorers: Array<{
-    id: string;
-    name: string;
-    code: string | null;
-    position: string | null;
-    goals: number;
-    assists: number;
-    total_points: number;
-  }>;
-}
-
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   const json = await res.json().catch(() => ({}));
@@ -57,20 +21,6 @@ export function useTeam(slug: string | undefined) {
       return json.data;
     },
     enabled: !!slug,
-  });
-}
-
-export function useTeamDashboard(slug: string | undefined) {
-  return useQuery({
-    queryKey: ['team-dashboard', slug],
-    queryFn: async () => {
-      const json = await fetchJson<{ data: DashboardData }>(
-        `/api/teams/${slug}/dashboard`,
-      );
-      return json.data;
-    },
-    enabled: !!slug,
-    refetchOnWindowFocus: false,
   });
 }
 

@@ -18,62 +18,6 @@ const patchSchema = z
   })
   .refine((d) => Object.keys(d).length > 0, { message: 'No fields to update' });
 
-// GET /api/teams/[slug]/players/[id] — squad row detail (id = team_member.id)
-export async function GET(_req: Request, { params }: Params) {
-  const { slug, id } = await params;
-  const ctx = await requireTeamAccess(slug, { allowPublic: true });
-  if (isTeamAccessError(ctx)) return ctx;
-
-  const { data, error } = await ctx.supabase
-    .from('team_members')
-    .select(
-      `id, jersey_code, position, matches_played, goals, assists, clean_sheets,
-       total_points, is_active, joined_at,
-       user:users!team_members_user_id_fkey (id, name, avatar_url)`,
-    )
-    .eq('id', id)
-    .eq('team_id', ctx.team.id)
-    .maybeSingle();
-
-  if (error) {
-    return NextResponse.json({ error: 'Failed to fetch player' }, { status: 500 });
-  }
-  if (!data) {
-    return NextResponse.json({ error: 'Player not found' }, { status: 404 });
-  }
-
-  const row = data as unknown as {
-    id: string;
-    jersey_code: string | null;
-    position: 'GK' | 'DF' | 'MF' | 'FW' | null;
-    matches_played: number;
-    goals: number;
-    assists: number;
-    clean_sheets: number;
-    total_points: number;
-    is_active: boolean;
-    joined_at: string;
-    user: { id: string; name: string | null; avatar_url: string | null } | null;
-  };
-
-  return NextResponse.json({
-    data: {
-      id: row.id,
-      name: row.user?.name || 'Ẩn danh',
-      code: row.jersey_code,
-      position: row.position,
-      avatar_url: row.user?.avatar_url ?? null,
-      matches_played: row.matches_played,
-      goals: row.goals,
-      assists: row.assists,
-      clean_sheets: row.clean_sheets,
-      total_points: row.total_points,
-      created_at: row.joined_at,
-      updated_at: row.joined_at,
-    },
-  });
-}
-
 // PATCH — cập nhật số áo / vị trí của member. Owner/admin only.
 export async function PATCH(request: Request, { params }: Params) {
   const { slug, id } = await params;

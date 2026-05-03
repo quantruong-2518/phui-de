@@ -3,7 +3,7 @@
 import { useMatchStore } from '@/stores/use-match-store';
 import { MOCK_UPCOMING_MATCHES } from '@/lib/mock-data';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, MapPin, Ticket, Play, X } from 'lucide-react';
+import { Calendar, Clock, MapPin, Ticket, Play } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function UpcomingMatches() {
@@ -17,7 +17,7 @@ export function UpcomingMatches() {
     });
   };
 
-  const handleCancel = (id: string) => {
+  const handleCancel = () => {
     toast.info('Tính năng hủy chưa được implement');
   };
 
@@ -105,7 +105,7 @@ export function UpcomingMatches() {
                   variant="outline"
                   size="sm"
                   className="text-destructive hover:bg-destructive/10 hover:text-destructive px-3"
-                  onClick={() => handleCancel(match.id)}
+                  onClick={handleCancel}
                 >
                   Hủy
                 </Button>

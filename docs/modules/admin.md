@@ -76,6 +76,10 @@ API gate bằng `requireAdmin()` (`src/lib/auth/admin-access.ts`).
 | PATCH | `/api/fields/[id]` | admin | Update partial |
 | DELETE | `/api/fields/[id]` | admin | Xoá hẳn |
 
+### Module fields
+
+Xem [[../../src/features/fields/specs.md]] — schema, validation, UI rules, roadmap (slots, bookings, votes, comments, promotions).
+
 ## See also
 
 - [[../database/schema#fields-migration-011]]

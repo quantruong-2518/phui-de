@@ -5,7 +5,6 @@ import {
   Trophy,
   Target,
   TrendingUp,
-  MapPin,
   Shield,
   Flame,
   History,
@@ -13,7 +12,6 @@ import {
   BarChart3,
   Zap,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import {
   MOCK_PASSION_FC,
   MOCK_PASSION_FC_PLAYERS,
@@ -27,7 +25,6 @@ import { UpcomingMatches } from '@/components/match/UpcomingMatches';
 import { useMatchStore } from '@/stores/use-match-store';
 
 interface TeamDetailTabProps {
-  memberName?: string;
   role?: { label: string; icon: string };
 }
 
@@ -46,10 +43,7 @@ const badgeIcons: Record<string, React.ElementType> = {
   award: Trophy,
 };
 
-export function TeamDetailTab({
-  memberName = 'Bạn',
-  role,
-}: TeamDetailTabProps) {
+export function TeamDetailTab({ role }: TeamDetailTabProps) {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const { liveMatch } = useMatchStore();
 

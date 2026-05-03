@@ -26,19 +26,6 @@ export function usePlayers(slug: string) {
   });
 }
 
-export function usePlayer(slug: string, id: string | undefined) {
-  return useQuery({
-    queryKey: ['players', slug, id],
-    queryFn: async () => {
-      const json = await fetchJson<{ data: Player }>(
-        `/api/teams/${slug}/players/${id}`,
-      );
-      return json.data;
-    },
-    enabled: !!slug && !!id,
-  });
-}
-
 export function useUpdatePlayer(slug: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -51,7 +38,6 @@ export function useUpdatePlayer(slug: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['players', slug] });
       qc.invalidateQueries({ queryKey: ['members', slug] });
-      qc.invalidateQueries({ queryKey: ['team-dashboard', slug] });
       toast.success('Đã cập nhật');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -66,7 +52,6 @@ export function useDeletePlayer(slug: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['players', slug] });
       qc.invalidateQueries({ queryKey: ['members', slug] });
-      qc.invalidateQueries({ queryKey: ['team-dashboard', slug] });
       toast.success('Đã xóa khỏi đội');
     },
     onError: (err: Error) => toast.error(err.message),

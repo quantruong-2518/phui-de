@@ -3,7 +3,6 @@
 import { MOCK_PASSION_FC_MATCHES } from '@/lib/mock-data';
 import { useMatchStore } from '@/stores/use-match-store';
 import type { MatchRecord } from '@/types/match-scoring.types';
-import { Trophy, BarChart3 } from 'lucide-react';
 
 const resultBadge: Record<string, string> = {
   W: 'badge-win',
