@@ -28,12 +28,18 @@ const USERNAME_TO_EMAIL: Record<string, string> = { admin: 'admin@phude.local' }
 
 ## Seed admin
 
-File `supabase/seed_admin.sql`. Chạy 1 lần qua Supabase SQL Editor:
+⚠️ KHÔNG INSERT trực tiếp vào `auth.users` — Supabase mới có >40 cột + logic
+gotrue, SQL seed dễ để row lệch trạng thái → login báo "Database error
+querying schema".
 
-- `auth.users` row email `admin@phude.local`, password hash `bf` (bcrypt).
-- `public.users` row `role='ADMIN'`, `onboarding_completed=true`.
+Cách đúng:
 
-Idempotent — chạy lại reset password & role.
+1. **Dashboard → Authentication → Users → Add user → Create new user**
+   - Email: `admin@phude.local`
+   - Password: `madin@2023`
+   - Auto Confirm User: ✓
+2. SQL Editor → chạy `supabase/seed_admin.sql` (chỉ là 1 UPDATE) để
+   promote `public.users.role = 'ADMIN'`.
 
 Default credentials (MVP, chưa rotate):
 
